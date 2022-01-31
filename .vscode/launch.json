@@ -1,0 +1,143 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.3",
+    "configurations": [
+
+        {
+            "name": "RoboSLAM",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/roboslam",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "backend test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/roboslam_dist",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "recorder",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/recorder",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Simple Test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/simple_test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "externalConsole": false
+        },
+        {
+            "name": "Test ICP GPU",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/gpu_icp_test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "externalConsole": false
+        },
+        {
+            "name": "TestRealsense",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/libraries/librealsense/test_realsense",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/libraries/librealsense/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "TestFreenect",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/libraries/freenect/test_freenect",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/libraries/freenect/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "TestGPU",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/testgpu",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

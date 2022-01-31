@@ -1,0 +1,48 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "make project",
+            "command": "tput reset && cmake ../ -Wno-dev && make -j10", 
+
+            "options": {
+                "cwd": "build"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "run project",
+            "command": "./roboslam test_ini.ini", 
+
+            "options": {
+                "cwd": "build"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        }
+        // ,
+        // {
+        //     "type": "shell",
+        //     "label": "fastcuda make clean",
+        //     "command": "tput reset && make clean fastcuda -j8", 
+
+        //     "options": {
+        //         "cwd": "build"
+        //     },
+        //     "problemMatcher": [],
+        //     "group": {
+        //         "kind": "build",
+        //         "isDefault": true
+        //     }
+        // }
+    ],
+    "version": "2.0.0"
+}
