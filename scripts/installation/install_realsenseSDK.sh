@@ -20,14 +20,14 @@ git checkout $REALSENSE_HEAD
 
 mkdir build && cd build
 
-cmake -DCMAKE_INSTALL_PREFIX:PATH="/files/Libraries/realsense/install" ..
+cmake -DCMAKE_INSTALL_PREFIX:PATH="$cwd/install" -DENFORCE_METADATA:BOOL="1" ..
 
 make
 make install
 
 # Save the install library path
-echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/files/Libraries/realsense/install/lib/" >> ~/.bashrc
-echo "export PATH=$PATH:/files/Libraries/realsense/install/bin" >> ~/.bashrc
+echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:\"$cwd\"/install/lib/" >> ~/.bashrc
+echo "export PATH=$PATH:\"$cwd\"/install/bin" >> ~/.bashrc
 source ~/.bashrc
 
 # Setup the udev rules for the device permissions

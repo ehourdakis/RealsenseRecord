@@ -1,4 +1,4 @@
-%This version of align data aligns data automatically based on their first start
+%Align the time-series of the data, by finding the first time instant that the derivative on each axis of motion 
 function align_data(directory)
 %% clc
 %clear all, clc, clf;
