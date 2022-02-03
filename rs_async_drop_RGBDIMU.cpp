@@ -33,6 +33,8 @@ try
     if(argc < 4) { LOGs << "Not enough parameters. Please run as: rs_async_RGBDi $DATASET_DIRECTORY $RECORDING_MODE $DATASET_SIZE" << std::endl; return 0; }
     int dataset_size = 100;
 
+    std::cout << "RealSense get frames from device callback (Unsynchronized)" << std::endl;
+
     if(argc > 1) data_dir           = std::string(argv[1]);
     //Use 30 for 30 1240x780 fps, 60 for 60 fps and 90 for 90 fps
     if(argc > 2) recording_mode_fps = atoi(argv[2]); else recording_mode_fps = 90;   
@@ -42,15 +44,15 @@ try
     // Setup the database folders and index files
     create_dir_if_not_exists(data_dir);
 
-    rgb_file.open      (data_dir + "rgb.txt",      std::ios_base::out);
-    depth_file.open    (data_dir + "depth.txt",    std::ios_base::out);
-    acc_file.open      (data_dir + "acc.txt",      std::ios_base::out);
-    gyr_file.open      (data_dir + "gyr.txt",      std::ios_base::out);
+    rgb_file.open      (data_dir + "/rgb.txt",      std::ios_base::out);
+    depth_file.open    (data_dir + "/depth.txt",    std::ios_base::out);
+    acc_file.open      (data_dir + "/acc.txt",      std::ios_base::out);
+    gyr_file.open      (data_dir + "/gyr.txt",      std::ios_base::out);
 
-    create_dir_if_not_exists(data_dir + "rgb");
-    create_dir_if_not_exists(data_dir + "depth");
-    create_dir_if_not_exists(data_dir + "acc");
-    create_dir_if_not_exists(data_dir + "gyr");
+    create_dir_if_not_exists(data_dir + "/rgb");
+    create_dir_if_not_exists(data_dir + "/depth");
+    create_dir_if_not_exists(data_dir + "/acc");
+    create_dir_if_not_exists(data_dir + "/gyr");
 
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
 
@@ -63,7 +65,7 @@ try
     std::mutex mutex;
 
     if (!check_imu_is_supported()) {
-        std::cerr << "No realsense device with IMU support not found";
+        std::cerr << "No realsense device with IMU support found";
         return EXIT_FAILURE;
     }
 
@@ -159,7 +161,7 @@ try
         };
 
         // Cout the recorded data sizes
-        std::cout << "Recording " << (int)dataset_size << " frames " << "Depths: " << depths.size() << " RGBs: " << rgbs.size() << " Accs " << accs.size() << " Gyrs " << gyrs.size() << "\r";//std::endl; 
+        std::cout << "Recording " << (int)dataset_size << " (depth) frames " << "Depths: " << depths.size() << " RGBs: " << rgbs.size() << " Accs " << accs.size() << " Gyrs " << gyrs.size() << "\r";//std::endl; 
         
         if (rs2::frameset fs = frame.as<rs2::frameset>())
         {
@@ -194,7 +196,7 @@ try
                 rs2_vector gyro_data = motion.get_motion_data();
                 gyrs[ts] = gyro_data;
                 
-                std::cout << std::fixed << "Gyro frame Timestamp: \t" <<ts << std::endl;
+                //std::cout << std::fixed << "Gyro frame Timestamp: \t" <<ts << std::endl;
             
 #ifdef NO_MARGINAL_GYRO
         static double last_ts_gyro = -1000.0;
@@ -230,15 +232,14 @@ try
                 rs2_vector accel_data = motion.get_motion_data();
                 accs[ts] = accel_data;
 
-                std::cout << std::fixed << "Acceleration frame Timestamp: \t" << ts << std::endl;
+                //std::cout << std::fixed << "Acceleration frame Timestamp: \t" << ts << std::endl;
             }
         }
     };
 
     // Start pipe and load the configuration file    
     rs2::pipeline_profile profiles = pipe.start(cfg, callback);
-    std::cout << "RealSense get frames from device callback (Unsynchronized)" << std::endl;
-
+    
     // Get the device intrinsics
     auto color_stream       = profiles.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
     auto resolution         = std::make_pair(color_stream.width(), color_stream.height());
@@ -249,7 +250,7 @@ try
 
     // Cout and save the dataset intrinsics into a file
     std::cout << std::fixed << std::setprecision(10) << "Intrisics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
-    std::ofstream fintrinsics  (data_dir + "rgb.intrisics", std::ios_base::out);
+    std::ofstream fintrinsics  (data_dir + "/rgb.intrisics", std::ios_base::out);
     fintrinsics << std::setprecision(10) << intr.fx      << ", 0.0, "    << intr.ppx << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, "      << intr.fy      << ", " << intr.ppy << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, "      << "0.0, "      << "1.0" << std::endl;
@@ -296,7 +297,7 @@ try
     }
 
     // Save the data into files
-    std::cout << "\nSaving " << rgbs.size() << " RGBs" << "\n";
+    //std::cout << "\nSaving " << rgbs.size() << " RGBs" << "\n";
     int ii = 0;
     for (auto i : rgbs) {
         std::string namergb = std::string("rgb/r") + std::to_string(ii++) + std::string(".png"); 
@@ -304,35 +305,36 @@ try
         cv::Mat locl_rgb;
         cv::cvtColor  (i.second, locl_rgb, cv::COLOR_BGR2RGB);
         cv::imwrite(data_dir + namergb, locl_rgb);
-        std::cout << "Saved " << ii << "\r";
+        std::cout << "Saving RGBs: " << ii << "\r";
     }
-    std::cout << "\nSaving " << depths.size() << " Depths" << "\n";
+    //std::cout << "\nSaving " << depths.size() << " Depths" << "\n";
     int dd = 0;
     for (auto i : depths) {
         std::string namedepth = std::string("depth/d") + std::to_string(dd++) + std::string(".png"); 
         depth_file << std::fixed << i.first << " " << namedepth << std::endl;
         cv::imwrite(data_dir + namedepth, depths[i.first]);
-        std::cout << "Saved " << dd << "\r";
+        std::cout << "Saving Depths: " << dd << "\r";
     }
-    std::cout << "\nSaving " << accs.size() << " Accellerations" << "\n";
+    //std::cout << "\nSaving " << accs.size() << " Accellerations" << "\n";
     int aa = 0;
     for (auto i : accs) {
         std::string nameacc = std::string("acc/a") + std::to_string(aa++) + std::string(".txt"); 
         acc_file << std::fixed << i.first << " " << nameacc << std::endl;
         std::ofstream acc_  (data_dir + nameacc, std::ios_base::out);
         acc_ << accs[i.first].x << " " <<  accs[i.first].y << " " << accs[i.first].z << std::endl;
-        std::cout << "Saved " << aa << "\r";
+        std::cout << "Saving accels: " << aa << "\r";
     }
     int gg = 0;
-    std::cout << "\nSaving " << gyrs.size() << " Gyros" << "\n";
+    //std::cout << "\nSaving " << gyrs.size() << " Gyros" << "\n";
     for (auto i : gyrs) {
         std::string namegyr = std::string("gyr/g") + std::to_string(gg++) + std::string(".txt"); 
         gyr_file << std::fixed << i.first << " " << namegyr << std::endl;
         std::ofstream gyr_  (data_dir + namegyr, std::ios_base::out);
         gyr_ << gyrs[i.first].x << " " <<  gyrs[i.first].y << " " << gyrs[i.first].z << std::endl;
-        std::cout << "Saved " << gg << "\r";
+        std::cout << "Saving gyroscopes: " << gg << "\r";
     }
-    std::cout << std::endl;
+    std::cout << "                                 " << "\r";
+    std::cout << "Finished" << "\r" << std::endl;
 
     return EXIT_SUCCESS;
 }

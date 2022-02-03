@@ -35,9 +35,15 @@
 # sudo apt-get install python-argparse
 
 """
-The Kinect provides the color and depth images in an un-synchronized way. This means that the set of time stamps from the color images do not intersect with those of the depth images. Therefore, we need some way of associating color images to depth images.
+The Kinect provides the color and depth images in an un-synchronized way. This means that 
+the set of time stamps from the color images do not intersect with those of the depth images. 
+Therefore, we need some way of associating color images to depth images. For this purpose,
+you can use the ''associate.py'' script. It reads the time stamps from the rgb.txt file and 
+the depth.txt file, and joins them by finding the best matches.
 
-For this purpose, you can use the ''associate.py'' script. It reads the time stamps from the rgb.txt file and the depth.txt file, and joins them by finding the best matches.
+FELICE Edit: We have edited the script to include the accelerometer and gyroscope measurements
+Run as: 
+python assoc_rgbdi.py rgb.txt depth.txt acc.txt gyr.txt
 """
 
 import argparse
@@ -84,8 +90,8 @@ def associate(first_list, second_list,offset,max_difference):
     matches -- list of matched tuples ((stamp1,data1),(stamp2,data2))
     
     """
-    first_keys = first_list.keys()
-    second_keys = second_list.keys()
+    first_keys = list(first_list)#.keys()
+    second_keys = list(second_list)#.keys()
     potential_matches = [(abs(a - (b + offset)), a, b) 
                          for a in first_keys 
                          for b in second_keys 
@@ -115,8 +121,8 @@ def associate_no_remove(first_list, second_list,offset,max_difference):
     matches -- list of matched tuples ((stamp1,data1),(stamp2,data2))
     
     """
-    first_keys = first_list.keys()
-    second_keys = second_list.keys()
+    first_keys  = list(first_list)#.keys()
+    second_keys = list(second_list)#.keys()
     potential_matches = [(abs(a - (b + offset)), a, b) 
                          for a in first_keys 
                          for b in second_keys 
@@ -154,17 +160,18 @@ if __name__ == '__main__':
     acc_list   = read_file_list(args.acc_file)
     gyr_list   = read_file_list(args.gyr_file)
 
+    print("Associating the RGB, Depth, Accelerometer and Gyroscope measurements, based on their timestamps")
     #For preintegration we need only one acceleration - gyro pair so associate one-to-one accel gyro. We want the maximum pairs of accel-gyro for each depth
     #frame so use associate_no_remove for this purpose. 
     matches_depthrgb = associate		    (depth_list,    rgb_list,   float(args.offset),float(args.max_difference))    #Associate depth with rgb images
-    matches_depthacc = associate_no_remove	    (depth_list,    acc_list,   float(args.offset),float(args.max_difference))    #Associate one depth with multiple Acceleration Frames
+    matches_depthacc = associate_no_remove  (depth_list,    acc_list,   float(args.offset),float(args.max_difference))    #Associate one depth with multiple Acceleration Frames
     matches_accgyr   = associate		    (acc_list,      gyr_list,   float(args.offset),float(args.max_difference))    #Associate one acceleration frame with one gyro
 
     # print(matches_accgyr)
-    depth_keys  = depth_list.keys()
-    rgb_keys    = rgb_list.keys()
-    acc_keys    = acc_list.keys()
-    gyr_keys    = gyr_list.keys()
+    depth_keys  = list(depth_list)#.keys()
+    rgb_keys    = list(rgb_list)#.keys()
+    acc_keys    = list(acc_list)#.keys()
+    gyr_keys    = list(gyr_list)#.keys()
 
     #potential_matches = [(abs(a - (b + offset)), a, b) 
     #                     for a in first_keys 
@@ -176,7 +183,10 @@ if __name__ == '__main__':
     rgb_aligned     = open("rgb_aligned.txt","w")
     imu_aligned     = open("imu_aligned.txt","w")
 
+    if not os.path.exists('imu'):
+        os.mkdir("imu")
     index = 0
+
     for d,r in matches_depthrgb: 
         depth_aligned.write('%f %s\n' % (d, depth_list.get(d)))
         rgb_aligned.write  ('%f %s\n' % (r, rgb_list.get(r)))
@@ -185,7 +195,7 @@ if __name__ == '__main__':
         txt = "imu/i{index:d}.csv"
         #print(txt.format(index = index))
         imu_frame_file   = open(txt.format(index = index),"w")
-        print("Depth Timestamp: %f Depth file: %s RGB Timestamp: %f RGB file: %s"%(d,depth_list.get(d),r, str(rgb_list.get(r))))
+        print("Matched ... Depth Timestamp: %f Depth file: %s RGB Timestamp: %f RGB file: %s"%(d,depth_list.get(d),r, str(rgb_list.get(r))))
         for d2,a in matches_depthacc: 
             if d == d2: 
                 for a2,g in matches_accgyr:
@@ -194,10 +204,10 @@ if __name__ == '__main__':
                         str_gyr = gyr_file.readline().strip()
                         acc_file = open(acc_list.get(a),"r")
                         str_acc = acc_file.readline().strip()
-                        print("%f %s %s"%(a2,str_acc,str_gyr))
+                        #print("%f %s %s"%(a2,str_acc,str_gyr))
 
                         imu_frame_file.write('%f %s %s\n'%(a2, str_acc, str_gyr))
-                            #print("Acc Timestamp: %f Acc Value: %s Gyro Timestamp: %f Gyro Value: %s"%(a2,acc_list.get(a2),g, gyr_list.get(g)))
+                        print("\t\tAcc Timestamp: %f Accelorometer file: %s Gyroscope Timestamp: %f Gyroscope file: %s"%(a2,acc_list.get(a2),g, gyr_list.get(g)))
 
         index = index+1
 

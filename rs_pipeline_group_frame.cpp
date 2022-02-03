@@ -54,7 +54,7 @@ void saveFrameTUMFormatRGBDAccsGyros(RGBDAccRotFrame pair, int iframe) {
     // Show the new colored image
     cv::imshow("rgb", locl_rgb);
     cv::waitKey(1);
-
+ 
     // Save the (new) rgb and depth images
 	cv::imwrite(namergb, locl_rgb);
 	cv::imwrite(namedep, pair._depth._m);
@@ -91,13 +91,13 @@ try
     // Setup the database folders and index files
     create_dir_if_not_exists(data_dir);
 
-    rgb_file  .open(data_dir + "rgb.txt",      std::ios_base::out);
-    depth_file.open(data_dir + "depth.txt",    std::ios_base::out);
-    imu_file  .open(data_dir + "imu.txt",      std::ios_base::out);
+    rgb_file  .open(data_dir + "/rgb.txt",      std::ios_base::out);
+    depth_file.open(data_dir + "/depth.txt",    std::ios_base::out);
+    imu_file  .open(data_dir + "/imu.txt",      std::ios_base::out);
 
-    create_dir_if_not_exists(data_dir + "rgb");
-    create_dir_if_not_exists(data_dir + "depth");
-    create_dir_if_not_exists(data_dir + "imu");
+    create_dir_if_not_exists(data_dir + "/rgb");
+    create_dir_if_not_exists(data_dir + "/depth");
+    create_dir_if_not_exists(data_dir + "/imu");
 
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
 
@@ -118,7 +118,7 @@ try
     std::mutex                  mutex;
 
     if (!check_imu_is_supported()) {
-        std::cerr << "No realsense device with IMU support not found";
+        std::cerr << "No realsense device with IMU support found";
         return EXIT_FAILURE;
     }
 

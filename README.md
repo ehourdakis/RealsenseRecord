@@ -32,8 +32,8 @@ This process will compile two different executables, described  below:
 
 To record a dataset, run the following command:
 ```bash
-# Record 300 frames in the home/datadir/ directory
-./rs_async_drop_RGBDIMU "/home/datadir/" 300 
+# Record 300 frames with 30 FPS in the home/datadir/ directory
+./rs_async_drop_RGBDIMU "/home/datadir/" 30 300 
 ```
 All data will be stored in directory specified in the first argument. This has the following structure:
 ```
@@ -48,24 +48,33 @@ datadir
 │   ├── **/*.txt
 ├── rgb.txt
 ├── depth.txt
-├── imu.txt
+├── acc.txt
+├── gyr.txt
 ├── rgb.intrisics
 ```
-The rgb and depth directories hold the corresponding RGB/ and Depth/ files in a .png format. The acc/ and gyr/ directories hold the accelerometer and gyroscope measurements as a 3D vector stored in a .txt file. The files are indexed by order of first appearance. The files rgb.txt, depth.txt, acc.txt and gyr.txt store the timestamp and the index of each image. Finally, the file rgb.intrisics holds the intrinsics of the RGB device, as a 3x3 matrix stored in a text format. 
+The rgb and depth directories hold the corresponding RGB/ and Depth/ files in a .png format. The acc/ and gyr/ directories hold the accelerometer and gyroscope measurements as a 3D vector stored in a .txt file. The files are indexed by order of first appearance.  The files rgb.txt, depth.txt, acc.txt and gyr.txt store the timestamp and the index of each image. Finally, the file rgb.intrisics holds the intrinsics of the RGB device, as a 3x3 matrix stored in a text format. 
 ## Syncrhonization
-The aforementioned data are indexed directly as obtained by the device. However, the different device streams in the realsense cameras are not syncrhonized. For example, it has been reported that there is a consistent lag between the IMU and RGB-D measurements. To compensate for this we must post-process the data, in order to associate the different data frames, based on their timestamps. The directory scripts/postprocess includes scripts to make this alignemnt. 
+The aforementioned data are indexed directly, as obtained by the device. However, the different device streams in the realsense cameras are not syncrhonized. For example there is a consistent lag between the IMU and RGB-D measurements. To compensate for this we must post-process the data, in order to associate the different data frames, based on their timestamps. The directory scripts/postprocess includes scripts to make this alignemnt. 
 ```bash
 # Align the timestsamps
 python scripts/postprocess/assoc_rgbdi.py rgb.txt depth.txt acc.txt gyr.txt
 ```
-Which will generate the following new file indexes:
+
+If the setup has installed the proper paths, instead of the above cmd line, you can simply execute the **associate.sh** script directly from the data main directory. This will generate the following new file indexes:
 ```
+├── imu
+│   ├── **/*.csv
 ├── rgb_aligned.txt
 ├── depth_aligned.txt
-├── acc.txt
-├── gyr.txt
+├── imu_aligned.txt
 ```
-While recording, the only computational intensive operation that takes place is aligning the RGB image to the Depth image. You can try adding additional data filters, however, adding too many will affect the frame rate of the camera. All images are indexed based on their timestamp on a map, and saved to the database format after the acquisition process ends.
+The aligned files are ordered and grouped by timestamp. The new imu folder and the imu_aligned.txt index file contain the associated accelerometer and gyroscope measurements. 
+
+As you can see in the figure below, the frames are syncrhonized, and we get a group of Depth, RGB + multiple accelerometer, gyroscope measurements that is consistent with the framerates of the different devices:
+
+![Synchronized device frames](images/synchronized.png)
+
+*NOTE:* While recording, the only computational intensive operation that takes place is aligning the RGB image to the Depth image. You can try adding additional data filters, however, adding too many will affect the frame rate of the camera. All images are indexed based on their timestamp on a map, and saved to the database format after the acquisition process ends.
 
 ## Intel realsense cameras and timestamps
 The realsense [documentation](https://intelrealsense.github.io/librealsense/doxygen/classrs2_1_1frame.html) describes four different types of timestamps:
@@ -88,11 +97,17 @@ The user can select between the unmodified and the host-calculated Hardware Time
 A more detailed discussion on retrieving the IMU frames can be found [here](https://www.intelrealsense.com/how-to-getting-imu-data-from-d435i-and-t265/). In summary, IMU frames are timestamped according the rule below:
 
 *Each IMU data packet is timestamped using the depth sensor hardware clock to allow temporal synchronization between gyro, accel and depth frames.*
+## Calibration of the RGB and Depth sensors
+Intel provides different methods to calibrate the RGB and Depth sensors of the camera. These include [calibrating the depth sensor]() for improving depth precission and correcting “intrinsic” or “extrinsic” distortions. This "on-chip" self-calibration can be run from the GUI of the realsense-viewer, as described in the link above. 
 
-## Calibrating the IMU 
+The Intel Dynamic calibration tool is used to calirate the RGB sensor of the device. After calbration, the data are stored on chip, and can be accesed by the SDK. A complete guide describing the process can be found here: [Calibration use guide](https://dev.intelrealsense.com/docs/intel-realsensetm-d400-series-calibration-tools-user-guide). The Intel Dynamic Calibration tool can be installed by executing the file **scripts/installation/install_realsense_calibrationtool.sh**. The calibration data for the device can be retrieved by executing the script **scripts/postprocess/store_calibration.sh**. The script needs two command line arguments, the width and height of the requested resolution for the calibration data:
+```bash
+python scripts/postprocess/store_calibration.sh 1280 720
+```
+## Calibration of the IMU 
 The IMUs of the D435i and D400 cameras do not include any internal callibration for the IMU device. To calibrate these devices, Intel has made available the following [tool](https://github.com/IntelRealSense/librealsense/tree/development/tools/rs-imu-calibration#rs-imu-calibration-tool), which can be used to calibrate and store the IMU intrisics on the device, so that the SDK can retrieve them.  
 ## Evaluating datasets
-The directory scripts/evaluation/ includes scripts to evaluate the output of a vSLAM algorithm against some ground truth, using the **EVO** software. You can download it [here](https://github.com/MichaelGrupp/evo). In short, you can install it by running:
+The directory **scripts/evaluation/** includes scripts to evaluate the output of a vSLAM algorithm against some ground truth, using the **EVO** software. You can download it [here](https://github.com/MichaelGrupp/evo). In short, you can install it by running:
 ```bash
 pip install evo --upgrade --no-binary evo
 ```
