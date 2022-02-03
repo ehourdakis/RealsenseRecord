@@ -11,15 +11,15 @@ mkdir calibration
 rs-enumerate-devices  -c >> calibration/calibration_data.csv
 rs-enumerate-devices  -c | grep "Intrinsic of \"Color\" / $1x$2" -A 10 >> calibration/camera_intrinsic_parameters.csv
 
-# Drop the intrisics of the RGB device
-rm -f rgb.intrisics
-echo "$(cat calibration/camera_intrinsic_parameters.csv | grep Fx | awk '{print $2}'), 0.0, $(cat calibration/camera_intrinsic_parameters.csv | grep PPX | awk '{print $2}')">> rgb.intrisics
-echo "0.0, $(cat calibration/camera_intrinsic_parameters.csv | grep Fy | awk '{print $2}'), $(cat calibration/camera_intrinsic_parameters.csv | grep PPY | awk '{print $2}')" >> rgb.intrisics
-echo "0.0, 0.0, 1.0" >> rgb.intrisics
+# Drop the intrinsics of the RGB device
+rm -f rgb.intrinsics
+echo "$(cat calibration/camera_intrinsic_parameters.csv | grep Fx | awk '{print $2}'), 0.0, $(cat calibration/camera_intrinsic_parameters.csv | grep PPX | awk '{print $2}')">> rgb.intrinsics
+echo "0.0, $(cat calibration/camera_intrinsic_parameters.csv | grep Fy | awk '{print $2}'), $(cat calibration/camera_intrinsic_parameters.csv | grep PPY | awk '{print $2}')" >> rgb.intrinsics
+echo "0.0, 0.0, 1.0" >> rgb.intrinsics
 
 # Drop the depth calibration parameters
 rs-enumerate-devices  -c | grep "Intrinsic of \"Depth\" / $1x$2" -A 10 >> calibration/camera_intrinsic_parameters.csv
 
 
-echo "Set intrisics for mode $1x$2 to: "
-cat rgb.intrisics
+echo "Set intrinsics for mode $1x$2 to: "
+cat rgb.intrinsics

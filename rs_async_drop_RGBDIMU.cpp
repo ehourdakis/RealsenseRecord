@@ -249,8 +249,8 @@ try
     rs2_distortion model    = intr.model;
 
     // Cout and save the dataset intrinsics into a file
-    std::cout << std::fixed << std::setprecision(10) << "Intrisics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
-    std::ofstream fintrinsics  (data_dir + "/rgb.intrisics", std::ios_base::out);
+    std::cout << std::fixed << std::setprecision(10) << "intrinsics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
+    std::ofstream fintrinsics  (data_dir + "/rgb.intrinsics", std::ios_base::out);
     fintrinsics << std::setprecision(10) << intr.fx      << ", 0.0, "    << intr.ppx << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, "      << intr.fy      << ", " << intr.ppy << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, "      << "0.0, "      << "1.0" << std::endl;
