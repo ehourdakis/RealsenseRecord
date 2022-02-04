@@ -95,7 +95,7 @@ try
     std::cout << "Sensor " << get_sensor_name(dev.query_sensors()[1]) << " exposure: " << dev.query_sensors()[1].get_option(rs2_option::RS2_OPTION_EXPOSURE) << std::endl;
 	
     // Check if camera supports loading a .json configuration
-	if (dev.is<rs400::advanced_mode>()) {
+	if (dev.is<rs400::advanced_mode>() && ( boost::filesystem::exists(json_file_name)) ) {
 		auto advanced_mode_dev = dev.as<rs400::advanced_mode>();
 		// Check if advanced-mode is enabled
 		if (!advanced_mode_dev.is_enabled())
@@ -109,7 +109,7 @@ try
 	}
 	else {
 		std::cout << "Current device doesn't support advanced-mode!\n";
-		return EXIT_FAILURE;
+		//return EXIT_FAILURE;
 	}
 
     // Enable the device using the requested formats

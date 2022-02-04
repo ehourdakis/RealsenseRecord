@@ -1,0 +1,1 @@
+docker build -t felice/realsense:main . --build-arg build_type=GUI
