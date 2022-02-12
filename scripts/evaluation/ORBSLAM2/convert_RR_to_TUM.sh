@@ -10,18 +10,28 @@ if [ -z "$1" ]
     echo "No argument supplied, first argument should be data directory"
     return 0;
 fi
+if [ -z "$2" ]
+  then
+    echo "No argument supplied, second argument should be the directory to store converted data"
+    return 0;
+fi
 
 # Save current working directory
 cwd=$(pwd)
 
 # Goto to data dir
 cd $1
+[ -d $2 ]     				|| mkdir -p $2
 
-[ -d rgb_orb ]     || mkdir rgb_orb
-[ -d depth_orb] || mkdir depth_orb
 
-#cp rgb.txt rgb_ORIGINAL.txt
-#cp depth.txt depth_ORIGINAL.txt
+[ -d $2/rgb_orb ]     || mkdir -p $2/rgb_orb
+[ -d $2/depth_orb]    || mkdir -p $2/depth_orb
+
+[ -d $2/Results]      || mkdir -p $2/Results
+
+cp $1/Results/gt.csv $2/Results/gt.csv
+cp $REALSENSE_RECORD_DIR/scripts/evaluation/ORBSLAM2/TUM1.yaml $2/TUM1.yaml
+cp $1/rgb.intrisics $2/rgb.intrisics
 
 declare -i number=0
 while read line; do 
@@ -45,8 +55,8 @@ while read line; do
 	
 	# new file line
 	echo $prev_fname "will become ----> " $new_fname
-	cp $prev_fname $new_fname
-	echo $new_timestamp $new_fname >> rgb_orb.txt
+	cp $prev_fname $2/$new_fname
+	echo $new_timestamp $new_fname >> $2/rgb_orb.txt
 done < rgb_aligned.txt
 
 
@@ -69,8 +79,8 @@ while read line; do
 	
 	# new file line
 	echo $prev_fname "will become ----> " $new_fname
-	cp $prev_fname $new_fname
-	echo $new_timestamp $new_fname >> depth_orb.txt
+	cp $prev_fname $2/$new_fname
+	echo $new_timestamp $new_fname >> $2/depth_orb.txt
 done < depth_aligned.txt
 
 cd ${cwd}

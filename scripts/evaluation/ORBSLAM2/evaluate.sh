@@ -13,7 +13,12 @@
 
 if [ -z "$1" ]
   then
-    echo "No argument supplied, first argument should be data directory"
+    echo "No first argument supplied, first argument should be data directory"
+    return 0;
+fi
+if [ -z "$2" ]
+  then
+    echo "No second argument supplied, second argument should be evo parameters"
     return 0;
 fi
 
@@ -25,19 +30,21 @@ cd $REALSENSE_RECORD_DIR/scripts/evaluation/EVO
 
 # Sychronize data
 octave-cli align_data_octave.m $1/Results
+#cp $1/Results/estimated_poses.csv $1/Results/synced_estimated_poses.csv
+#cp $1/Results/gt.csv $1/Results/synced_gt_tum.csv
 
 export PATH=$PATH:/home/${USER}/.local/bin
 
 # Configure EVO drawing. This has to run only once.
 #evo_config reset
-evo_config set plot_seaborn_style whitegrid
-evo_config set plot_fontfamily serif plot_fontscale 1.2
-evo_config set plot_linewidth 1.0
-evo_config set plot_reference_linestyle -
-evo_config set plot_figsize 12 7
-#evo_config set plot_usetex
-#evo_config set plot_axis_marker_scale 0.1
-evo_config set plot_pose_correspondences false
+#evo_config set plot_seaborn_style whitegrid
+#evo_config set plot_fontfamily serif plot_fontscale 1.2
+#evo_config set plot_linewidth 1.0
+#evo_config set plot_reference_linestyle -
+#evo_config set plot_figsize 12 7
+##evo_config set plot_usetex
+##evo_config set plot_axis_marker_scale 0.1
+#evo_config set plot_pose_correspondences false
 
 mkdir -p $1/Results/EVO/
 # Evaluate the ATE and RPE for the given trajectory

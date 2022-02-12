@@ -41,7 +41,9 @@ gt_start = max(min(px(1), py(1)),pz(1));
 gt_end   = min(max(px(end), py(end)),pz(end));
 
 % Plot the points being removed
-ogt = gt_tum(gt_start:gt_end,:);
+% CHANGED HERE FOR NO SYNCRHONIZE
+% ogt = gt_tum(gt_start:gt_end,:);
+ogt = gt_tum;
 subplot(2,1,2), plot(ogt(:,1),ogt(:,2));
 
 %% Recenter to time 0 and pose 0 after transformations
@@ -80,7 +82,9 @@ fz = estimated_poses(:,4);
 est_start = max(min(px(1), py(1)),pz(1));
 est_end   = min(max(px(end), py(end)),pz(end));
 
-est = estimated_poses(est_start:est_end,:);
+% CHANGED HERE FOR NO SYNCRHO
+est = estimated_poses;
+% est = estimated_poses(est_start:est_end,:);
 
 %% Match the trajectory timestamps using linear interposlation on the resized time-series
 estimated_poses = est;
@@ -94,7 +98,7 @@ disp(strcat("Writing synced estimated poses in TUM format: ", fname));
 dlmwrite(fname, estimated_poses,'delimiter',' ','newline','pc');
 
 %% Cout results
-%disp("gt Start delay in Matlab:   " + gt_start)
-%disp("gt End delay in Matlab:     " + gt_end)
-%disp("est Start delay in Matlab:  " + est_start)
-%disp("est End delay in Matlab:    " + est_end)
+disp("gt Start delay : "), disp(gt_start)
+disp("gt end delay : "), disp(gt_end)
+disp("gt est start delay : "), disp(est_start)
+disp("gt est end delay : "), disp(est_end)
