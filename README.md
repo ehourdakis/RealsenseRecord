@@ -119,6 +119,14 @@ To retrieve the calibration data stored in the device by a previous calibration,
 ```bash
 source scripts/postprocess/store_calibration.sh 1280 720
 ```
+In [this document](https://www.intelrealsense.com/wp-content/uploads/2020/06/Intel-RealSense-D400-Series-Datasheet-June-2020.pdf) you can access information about the camera's baseline and other sensor parameters. 
+## RGB Distortion
+Intel D455 uses the Inverse Brown Conrady distortion model ([link](
+https://github.com/IntelRealSense/realsense-ros/issues/1580#issue-770723249)).
+You can see more info on the realsense distortion models [here](https://dev.intelrealsense.com/docs/projection-in-intel-realsense-sdk-20#section-distortion-models).
+By default, the Intel Realsense camera sends distorted images, with a very low distortion ([link](https://github.com/robotology/yarp-device-realsense2/issues/11#issuecomment-818563592)). 
+
+*NOTE:* Some users have reported inconsistent projection results when using the Inverse-Brown-Conrady, and more efficient results using the Modified-Brown-Conrady ([link1](https://github.com/IntelRealSense/librealsense/issues/7335#issuecomment-718644776),[link2](https://github.com/IntelRealSense/librealsense/issues/9551#issuecomment-891016647)).
 ## Calibration of the IMU 
 The D435i and D400 cameras do not include any internal calibration for their IMU. To calibrate these devices, Intel has made available the following [tool](https://github.com/IntelRealSense/librealsense/tree/development/tools/rs-imu-calibration#rs-imu-calibration-tool), which can be used to calibrate and store the IMU intrinsics on the device, so that the SDK can retrieve them.  
 ## Evaluating datasets
