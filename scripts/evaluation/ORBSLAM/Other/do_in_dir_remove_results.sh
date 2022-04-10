@@ -17,6 +17,11 @@ for d in */ ; do
 
     #Remove the results dir
     rm -rf "${PWD}/$d/Results/EVO/"
+
+    rm "${PWD}/$d/Results/estimated_poses.csv"
+    rm "${PWD}/$d/Results/KeyFrameTrajectory.txt"
+    rm "${PWD}/$d/Results/synced_estimated_poses.csv"
+    rm "${PWD}/$d/Results/synced_gt_tum.csv"
 done    
 
 

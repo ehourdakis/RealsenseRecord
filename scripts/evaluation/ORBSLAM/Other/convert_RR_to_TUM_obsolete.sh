@@ -1,16 +1,19 @@
 #!/bin/
 # Converts a RealsenseRecord dataset to the TUM format.
+# It will copy all data into a new converted directory, 
+# and rename all indexes for rgb and depth to have the 
+# timestamp in the filename. 
+
 # run as: 
-# 
-#!/bin/bash
-# Convert RR data sequence to ORBSLAM2 format
-# source convert_RR_to_TUM.sh ${DATA_DIR}
-if [ -z "$1" ]
+
+# source convert_RR_to_TUM.sh ${RR_DATA_DIR} ${RR_DATA_CONVERTED_DIR}
+
+if [ -z "$1" ];
   then
     echo "No argument supplied, first argument should be data directory"
     return 0;
 fi
-if [ -z "$2" ]
+if [ -z "$2" ];
   then
     echo "No argument supplied, second argument should be the directory to store converted data"
     return 0;
@@ -21,16 +24,18 @@ cwd=$(pwd)
 
 # Goto to data dir
 cd $1
-[ -d $2 ]     				|| mkdir -p $2
 
-
+# Make converted dir and create folders
+[ -d $2 ]     		  || mkdir -p $2
 [ -d $2/rgb_orb ]     || mkdir -p $2/rgb_orb
-[ -d $2/depth_orb]    || mkdir -p $2/depth_orb
+[ -d $2/depth_orb ]   || mkdir -p $2/depth_orb
+[ -d $2/Results ]     || mkdir -p $2/Results
 
-[ -d $2/Results]      || mkdir -p $2/Results
+# Find the ground truth file and copy it as well
+file_gt=$(find $1 -name 'gt.csv')
+cp $file_gt $2/Results/gt.csv
 
-cp $1/Results/gt.csv $2/Results/gt.csv
-cp $REALSENSE_RECORD_DIR/scripts/evaluation/ORBSLAM2/TUM1.yaml $2/TUM1.yaml
+cp $REALSENSE_RECORD_DIR/scripts/evaluation/ORBSLAM/TUM1.yaml $2/TUM1.yaml
 cp $1/rgb.intrisics $2/rgb.intrisics
 
 declare -i number=0

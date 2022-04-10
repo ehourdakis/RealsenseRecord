@@ -27,6 +27,14 @@ pip install numpy
 # Needed by EVO to draw graphs
 sudo apt-get install python3-tk
 
+# Octave for the alignment scripts
+sudo apt-get install -y octave
+sudo apt-get install octave-signal
+
+# Install EVO and add installation to path
+pip install evo --upgrade --no-binary evo
+echo "export PATH=$PATH:/home/${USER}/.local/bin/" >> ~/.bashrc
+
 # Add the script folders into path
 echo "export PATH=$PATH:$cwd/scripts/postprocess:$cwd/scripts/evaluation/EVO" >> ~/.bashrc
 echo "export PYTHONPATH=${PYTHONPATH}:$cwd/scripts/postprocess" >> ~/.bashrc
@@ -37,4 +45,5 @@ sudo chmod +x scripts/postprocess/associate.sh
 
 # Store the installation directory
 echo "export REALSENSE_RECORD_DIR=$cwd" >> ~/.bashrc
+
 source ~/.bashrc
