@@ -67,7 +67,7 @@ The files **rgb.txt**, **depth.txt**, **acc.txt** and **gyr.txt** store the time
 The aforementioned data are indexed directly, while being acquired asynchronously by the device callback. To compensate for this we must post-process the data, in order to associate the frames from different sensor streams, based on their timestamps. The directory **scripts/postprocess** includes scripts to make this synchronization. To syncrhonize the RGB, Depth, Gyroscope and Accelerometer data frames, run the following script:
 ```bash
 # Synchronize timestamps
-python scripts/postprocess/assoc_rgbdi.py rgb.txt depth.txt acc.txt gyr.txt
+python scripts/postprocess/assoc_rgbdi.py depth.txt rgb.txt acc.txt gyr.txt
 ```
 
 *NOTE: If the proper paths are installed using the **setup.sh** script in the **scripts/installation** folder, then you can simply navigate to a data directory, and run **associate.sh**, to synchronize the data.* 

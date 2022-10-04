@@ -18,7 +18,7 @@
 
 // Application parameters (parsed from cmd line arguments)
 int dataset_size        = 500;
-int recording_mode_fps  = 90;
+// int recording_mode_fps  = 90;
 std::string data_dir    = "/home/";
 
 // Files for storing the indexes of the rgb, depth, accelerometer and gyroscope frames
@@ -30,16 +30,22 @@ std::ofstream gyr_file;
 int main(int argc, char * argv[]) 
 try
 {
-    if(argc < 4) { LOGs << "Not enough parameters. Please run as: rs_async_RGBDi $DATASET_DIRECTORY $RECORDING_MODE $DATASET_SIZE" << std::endl; return 0; }
+    if(argc < 8) { LOGs << "Not enough parameters. Please run as: rs_async_RGBDi $DATASET_DIRECTORY $DATASET_SIZE $IMG_FRAMERATE $ACC_FRAMERATE $GYRO_FRAMERATE $FRAME_WIDTH $FRAME_HEIGHT " << std::endl; return 0; }
     int dataset_size = 100;
 
     std::cout << "RealSense get frames from device callback (Unsynchronized)" << std::endl;
 
-    if(argc > 1) data_dir           = std::string(argv[1]);
-    //Use 30 for 30 1240x780 fps, 60 for 60 fps and 90 for 90 fps
-    if(argc > 2) recording_mode_fps = atoi(argv[2]); else recording_mode_fps = 90;   
-    if(argc > 3) dataset_size       = atoi(argv[3]);;
-    LOGs << "Recording " << dataset_size << " frames in " << data_dir << " @ " << recording_mode_fps << " FPS" << std::endl;
+    int img_framerate, acc_framerate, gyro_framerate, frame_width, frame_height;
+    if(argc > 1) data_dir = std::string(argv[1]);
+    if(argc > 2) dataset_size = atoi(argv[2]);
+    if(argc > 3) img_framerate = atoi(argv[3]);
+    if(argc > 4) acc_framerate = atoi(argv[4]);
+    if(argc > 5) gyro_framerate = atoi(argv[5]);
+    if(argc > 6) frame_width = atoi(argv[6]);
+    if(argc > 7) frame_height = atoi(argv[7]);
+
+    LOGs << "Recording " << dataset_size << " frames in " << data_dir << " " << dataset_size << " " << img_framerate << " " << acc_framerate << " " << 
+        gyro_framerate << " " << frame_width << " " << frame_height << std::endl;
 
     // Setup the database folders and index files
     create_dir_if_not_exists(data_dir);
@@ -117,21 +123,22 @@ try
     cfg.enable_stream(RS2_STREAM_ACCEL, 		                RS2_FORMAT_MOTION_XYZ32F,   250);
     cfg.enable_stream(RS2_STREAM_GYRO, 		                    RS2_FORMAT_MOTION_XYZ32F,   400);
 
-    if(recording_mode_fps==30){
-        cfg.enable_stream(RS2_STREAM_DEPTH,     1280,  720,      RS2_FORMAT_Z16,            30);    
-        cfg.enable_stream(RS2_STREAM_COLOR,     1280,  720,      RS2_FORMAT_RGB8, 	        30);
-        std::cout << "Recording 1280x720 @ 30fps" << std::endl;
-    }
-    if(recording_mode_fps==60){
-        cfg.enable_stream(RS2_STREAM_DEPTH,     848,  480,       RS2_FORMAT_Z16,            60);    
-        cfg.enable_stream(RS2_STREAM_COLOR,     848,  480,       RS2_FORMAT_RGB8, 	        60);
-        std::cout << "Recording 848x480 @ 60fps" << std::endl;
-    }
-    if(recording_mode_fps==90){
-        cfg.enable_stream(RS2_STREAM_DEPTH,     640,  360,      RS2_FORMAT_Z16,             90);    
-        cfg.enable_stream(RS2_STREAM_COLOR,     640,  360, 	    RS2_FORMAT_RGB8, 	        90);
-        std::cout << "Recording 640x360 @ 90fps" << std::endl;
-    }
+    // if(recording_mode_fps==30){
+        cfg.enable_stream(RS2_STREAM_DEPTH,     frame_width,  frame_height,      RS2_FORMAT_Z16,   img_framerate);    
+        cfg.enable_stream(RS2_STREAM_COLOR,     frame_width,  frame_height,      RS2_FORMAT_RGB8,  img_framerate);
+        std::cout << "Recording " << "Image Size: " << frame_width << "x" << frame_height << " @ " << img_framerate << std::endl;
+        std::cout << "Acc fps " << acc_framerate << " Gyro fps " << gyro_framerate << std::endl;
+    // }
+    // if(recording_mode_fps==60){
+    //     cfg.enable_stream(RS2_STREAM_DEPTH,     640,  360,       RS2_FORMAT_Z16,            60);    
+    //     cfg.enable_stream(RS2_STREAM_COLOR,     640,  360,       RS2_FORMAT_RGB8, 	        60);
+    //     std::cout << "Recording 848x480 @ 60fps" << std::endl;
+    // }
+    // if(recording_mode_fps==90){
+    //     cfg.enable_stream(RS2_STREAM_DEPTH,     640,  360,      RS2_FORMAT_Z16,             90);    
+    //     cfg.enable_stream(RS2_STREAM_COLOR,     640,  360, 	    RS2_FORMAT_RGB8, 	        90);
+    //     std::cout << "Recording 640x360 @ 90fps" << std::endl;
+    // }
     std::cout << "Starting pipe" << std::endl;
     // Align the color stream to the depth stream
     rs2::align align(RS2_STREAM_DEPTH);         
@@ -255,6 +262,9 @@ try
     fintrinsics << std::setprecision(10) << "0.0, "      << intr.fy      << ", " << intr.ppy << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, "      << "0.0, "      << "1.0" << std::endl;
     
+    std::cout << std::fixed << std::setprecision(10) << "Distortion: " << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
+    std::ofstream fdistortion  (data_dir + "/rgb.distortion", std::ios_base::out);
+    fdistortion << std::setprecision(10) << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
     // Run the program until we have the requested ammount of frames
     while (depths.size() <= dataset_size)
     {

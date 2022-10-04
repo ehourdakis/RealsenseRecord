@@ -26,6 +26,6 @@ cd $REALSENSE_RECORD_DIR/scripts/evaluation/ORBSLAM/RGBDIMU/
 #source convert_RR_to_TUM.sh $1 $3
 #############################
 source run_orb.sh $3 $2
-source ../helpers/evaluate.sh $3 -sa
+# source ../helpers/evaluate.sh $3 -sa
 
 cd ${cwd}
