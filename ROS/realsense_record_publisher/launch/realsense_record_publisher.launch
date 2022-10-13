@@ -1,0 +1,9 @@
+<launch>
+  <node pkg="realsense_record_publisher" name="realsense_record_publisher" type="realsense_record_publisher" output="screen" >
+      <param name="dataset_directory" value="/home/manos/Downloads/tttt/try2/" type="str"/>
+      <param name="rgb_index_file" value="rgb_aligned.txt" type="str"/>
+      <param name="rgb_calibration_filename" value="rgb.intrinsics" type="str"/>
+      <param name="rgb_distortion_coefficients_filename" value="rgb.distortion" type="str"/>
+      <param name="depth_index_file" value="depth_aligned.txt" type="str"/>
+  </node>
+</launch>
