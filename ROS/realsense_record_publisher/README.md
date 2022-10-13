@@ -1,4 +1,4 @@
-### ROS publisher for Realsense Record datasets
+### realsense_record_publisher
 Use this package to publish Realsense Record datasets in ROS. Currently, the RGB and depth frames are supported.
 
 #### Syncrhonizing data frames
@@ -20,3 +20,6 @@ After the dataset is synchronized you can launch the publisher:
 roslaunch realsense_record_publisher realsense_record_publisher.launch
 ```
 The parameters of the publisher are located in the file ```launch/realsense_record_publisher.launch```.
+
+#### Installation
+To install the package, copy the realsense_record_publisher directory into your ROS workspace and build it.
