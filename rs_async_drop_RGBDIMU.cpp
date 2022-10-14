@@ -11,49 +11,70 @@
 #include <thread>
 #include <fstream>
 
-// #define NO_MARGINAL_GYRO         // Flag for enabling the biased estimation of the rotation matrix from IMU data
-
-// A very basic logging 
-#define LOGs std::cout 
-
-// Application parameters (parsed from cmd line arguments)
-int dataset_size        = 500;
-// int recording_mode_fps  = 90;
-std::string data_dir    = "/home/";
-
-// Files for storing the indexes of the rgb, depth, accelerometer and gyroscope frames
-std::ofstream rgb_file;
-std::ofstream depth_file; 
-std::ofstream acc_file;   
-std::ofstream gyr_file;   
-
 int main(int argc, char * argv[]) 
-try
 {
-    if(argc < 8) { LOGs << "Not enough parameters. Please run as: rs_async_RGBDi $DATASET_DIRECTORY $DATASET_SIZE $IMG_FRAMERATE $ACC_FRAMERATE $GYRO_FRAMERATE $FRAME_WIDTH $FRAME_HEIGHT " << std::endl; return 0; }
-    int dataset_size = 100;
+    if(argc < 3) { 
+        std::cout << "Not enough parameters. Please run as: rs_async_RGBDi $DATASET_DIRECTORY $DATASET_SIZE $OPTICAL_FRAMERATE=90 "\
+            "$FRAME_WIDTH=640 $FRAME_HEIGHT=360 $ACC_FRAMERATE=250 $GYRO_FRAMERATE=400\n";
+        return -1;
+    }
 
-    std::cout << "RealSense get frames from device callback (Unsynchronized)" << std::endl;
+    if (!check_imu_is_supported()) {
+        std::cerr << "No realsense device with IMU support found. Exiting.\n";
+        return EXIT_FAILURE;
+    }
 
-    int img_framerate, acc_framerate, gyro_framerate, frame_width, frame_height;
+    std::cout << "RealSense Record - Asynchronious mode.\n";
+
+    // Application parameters (parsed from cmd line arguments)
+    int dataset_size        = 500;
+    std::string data_dir    = "/home/";
+    int opt_framerate = 90;
+    int acc_framerate = 255;
+    int gyro_framerate = 400;
+    int frame_width = 640;
+    int frame_height = 360;
+
     if(argc > 1) data_dir = std::string(argv[1]);
     if(argc > 2) dataset_size = atoi(argv[2]);
-    if(argc > 3) img_framerate = atoi(argv[3]);
-    if(argc > 4) acc_framerate = atoi(argv[4]);
-    if(argc > 5) gyro_framerate = atoi(argv[5]);
-    if(argc > 6) frame_width = atoi(argv[6]);
-    if(argc > 7) frame_height = atoi(argv[7]);
+    if(argc > 3) opt_framerate = atoi(argv[3]);
+    if(argc > 4) frame_width = atoi(argv[4]);
+    if(argc > 5) frame_height = atoi(argv[5]);
+    if(argc > 6) acc_framerate = atoi(argv[6]);
+    if(argc > 7) gyro_framerate = atoi(argv[7]);
 
-    LOGs << "Recording " << dataset_size << " frames in " << data_dir << " " << dataset_size << " " << img_framerate << " " << acc_framerate << " " << 
-        gyro_framerate << " " << frame_width << " " << frame_height << std::endl;
+    std::cout << "Recording " << dataset_size << " frames in " << data_dir << std::endl;
+    std::cout << "Optical FPS: " << opt_framerate << "\nAccelerometer FPS: " << acc_framerate << "\nGyroscope FPS: " << gyro_framerate << "\nImage Width: " << frame_width << "\nImage Height: " << frame_height << std::endl;
 
     // Setup the database folders and index files
     create_dir_if_not_exists(data_dir);
 
-    rgb_file.open      (data_dir + "/rgb.txt",      std::ios_base::out);
-    depth_file.open    (data_dir + "/depth.txt",    std::ios_base::out);
-    acc_file.open      (data_dir + "/acc.txt",      std::ios_base::out);
-    gyr_file.open      (data_dir + "/gyr.txt",      std::ios_base::out);
+    // Files for storing the indexes of the rgb, depth, accelerometer and gyroscope frames
+    std::ofstream rgb_file;
+    std::ofstream depth_file; 
+    std::ofstream acc_file;   
+    std::ofstream gyr_file;
+
+    rgb_file.open(data_dir + "/rgb.txt", std::ios_base::out);
+    if(!rgb_file.is_open()) {
+        std::cerr << "Could not open rgb file index. Exiting\n";
+        return -1;
+    }
+    depth_file.open(data_dir + "/depth.txt", std::ios_base::out);
+    if(!depth_file.is_open()) {
+        std::cerr << "Could not open depth file index. Exiting\n";
+        return -1;
+    }
+    acc_file.open(data_dir + "/acc.txt", std::ios_base::out);
+    if(!acc_file.is_open()) {
+        std::cerr << "Could not open accelerometer file index. Exiting\n";
+        return -1;
+    }
+    gyr_file.open(data_dir + "/gyr.txt", std::ios_base::out);
+    if(!gyr_file.is_open()) {
+        std::cerr << "Could not open gyroscope file index. Exiting\n";
+        return -1;
+    }
 
     create_dir_if_not_exists(data_dir + "/rgb");
     create_dir_if_not_exists(data_dir + "/depth");
@@ -63,17 +84,13 @@ try
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
 
     //Structures for indexing the data frames, based on their timestamps
-    std::map<double, rs2_vector>        gyrs;
-    std::map<double, rs2_vector>        accs;
-    std::map<double, cv::Mat>           rgbs;
-    std::map<double, cv::Mat>           depths;
+    std::map<double, rs2_vector> gyrs;
+    std::map<double, rs2_vector> accs;
+    std::map<double, cv::Mat> rgbs;
+    std::map<double, cv::Mat> depths;
 
+    // Access mutex
     std::mutex mutex;
-
-    if (!check_imu_is_supported()) {
-        std::cerr << "No realsense device with IMU support found";
-        return EXIT_FAILURE;
-    }
 
     // Load a camera configuration
     rs2::config     cfg;
@@ -90,13 +107,21 @@ try
     // Query which device sensors are used to in case you want to configure them
     std::cout << "Active Sensors: " << "(0) " << get_sensor_name(dev.query_sensors()[0]) << " (1) " << get_sensor_name(dev.query_sensors()[1]) << " (2) " << get_sensor_name(dev.query_sensors()[2]) << std::endl;
     
-    // For example, change the RGB and depth autoexposure parameter
-    dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-    dev.query_sensors()[1].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-    dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_EXPOSURE, 33000);
-    dev.query_sensors()[1].set_option(rs2_option::RS2_OPTION_EXPOSURE, 100);
-    
-    // Cout the used autoexposure settings for the RGB and Depth sensor
+    // Change the RGB and depth autoexposure parameter
+    try
+    {
+        dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+        dev.query_sensors()[1].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+        dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_EXPOSURE, 10);
+        dev.query_sensors()[1].set_option(rs2_option::RS2_OPTION_EXPOSURE, 10);
+    }
+    catch (const rs2::error & e)
+    {
+        std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Print the autoexposure settings for the RGB and Depth sensor
     std::cout << "Sensor " << get_sensor_name(dev.query_sensors()[0]) << " exposure: " << dev.query_sensors()[0].get_option(rs2_option::RS2_OPTION_EXPOSURE) << std::endl;
     std::cout << "Sensor " << get_sensor_name(dev.query_sensors()[1]) << " exposure: " << dev.query_sensors()[1].get_option(rs2_option::RS2_OPTION_EXPOSURE) << std::endl;
 	
@@ -115,37 +140,33 @@ try
 	}
 	else {
 		std::cout << "Current device doesn't support advanced-mode!\n";
-		//return EXIT_FAILURE;
 	}
 
     // Enable the device using the requested formats
-	cfg.enable_device(serial);
-    cfg.enable_stream(RS2_STREAM_ACCEL, 		                RS2_FORMAT_MOTION_XYZ32F,   250);
-    cfg.enable_stream(RS2_STREAM_GYRO, 		                    RS2_FORMAT_MOTION_XYZ32F,   400);
+    try
+    {
+        cfg.enable_device(serial);
+        cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F,   250);
+        cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F,   400);
 
-    // if(recording_mode_fps==30){
-        cfg.enable_stream(RS2_STREAM_DEPTH,     frame_width,  frame_height,      RS2_FORMAT_Z16,   img_framerate);    
-        cfg.enable_stream(RS2_STREAM_COLOR,     frame_width,  frame_height,      RS2_FORMAT_RGB8,  img_framerate);
-        std::cout << "Recording " << "Image Size: " << frame_width << "x" << frame_height << " @ " << img_framerate << std::endl;
-        std::cout << "Acc fps " << acc_framerate << " Gyro fps " << gyro_framerate << std::endl;
-    // }
-    // if(recording_mode_fps==60){
-    //     cfg.enable_stream(RS2_STREAM_DEPTH,     640,  360,       RS2_FORMAT_Z16,            60);    
-    //     cfg.enable_stream(RS2_STREAM_COLOR,     640,  360,       RS2_FORMAT_RGB8, 	        60);
-    //     std::cout << "Recording 848x480 @ 60fps" << std::endl;
-    // }
-    // if(recording_mode_fps==90){
-    //     cfg.enable_stream(RS2_STREAM_DEPTH,     640,  360,      RS2_FORMAT_Z16,             90);    
-    //     cfg.enable_stream(RS2_STREAM_COLOR,     640,  360, 	    RS2_FORMAT_RGB8, 	        90);
-    //     std::cout << "Recording 640x360 @ 90fps" << std::endl;
-    // }
-    std::cout << "Starting pipe" << std::endl;
+        cfg.enable_stream(RS2_STREAM_DEPTH,     frame_width,  frame_height,      RS2_FORMAT_Z16,   opt_framerate);    
+        cfg.enable_stream(RS2_STREAM_COLOR,     frame_width,  frame_height,      RS2_FORMAT_RGB8,  opt_framerate);
+    }
+    catch (const rs2::error & e)
+    {
+        std::cerr << "Error enabling stream. " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+    
+    std::cout << "--- Starting pipe ---" << std::endl;
+    
     // Align the color stream to the depth stream
     rs2::align align(RS2_STREAM_DEPTH);         
     
     auto start = std::chrono::system_clock::now();
 
     bool bfirst = false;
+
     // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
     auto callback = [&](const rs2::frame& frame)
     { 
@@ -170,11 +191,9 @@ try
         // Cout the recorded data sizes
         std::cout << "Recording " << (int)dataset_size << " (depth) frames " << "Depths: " << depths.size() << " RGBs: " << rgbs.size() << " Accs " << accs.size() << " Gyrs " << gyrs.size() << "\r";//std::endl; 
         
+        // Retrieve RGB and depth frames as one frameset.
         if (rs2::frameset fs = frame.as<rs2::frameset>())
-        {
-            // fs = align.process(fs); 
-            // fs = fs.apply_filter(align);           
-
+        {     
             // Retrieve the color frame and align in to the depth stream
             rs2::video_frame color_frame = fs.get_color_frame().apply_filter(align);
             float width  = color_frame.get_width();
@@ -203,34 +222,8 @@ try
                 rs2_vector gyro_data = motion.get_motion_data();
                 gyrs[ts] = gyro_data;
                 
+                // Uncomment this to cout the gyro timestamps
                 //std::cout << std::fixed << "Gyro frame Timestamp: \t" <<ts << std::endl;
-            
-#ifdef NO_MARGINAL_GYRO
-        static double last_ts_gyro = -1000.0;
-        if(last_ts_gyro==-1000.0) last_ts_gyro = motion.get_timestamp();
-        static float3 theta;
-        // Holds the change in angle, as calculated from gyro
-        float3 gyro_angle;
-
-        // Initialize gyro_angle with data from gyro
-        gyro_angle.x = gyro_data.x; // Pitch
-        gyro_angle.y = gyro_data.y; // Yaw
-        gyro_angle.z = gyro_data.z; // Roll
-
-        // Compute the difference between arrival times of previous and current gyro frames
-        double dt_gyro = (ts - last_ts_gyro) / 1000.0;
-        last_ts_gyro = ts;
-
-        // Change in angle equals gyro measures * time passed since last measurement
-        gyro_angle = gyro_angle * dt_gyro;
-
-        // Apply the calculated change of angle to the current angle (theta)
-        // std::lock_guard<std::mutex> lock(theta_mtx);
-        // theta.add(-gyro_angle.z, -gyro_angle.y, gyro_angle.x);
-
-        theta.add(gyro_angle.x, gyro_angle.y, gyro_angle.z);
-        std::cout << "Reading gyro  " << gyro_data << " theta: " << theta.x << " " << theta.y << " " << theta.z << std::endl;
-#endif
             }
             if (motion && motion.get_profile().stream_type() == RS2_STREAM_ACCEL && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F) 
             {
@@ -239,6 +232,7 @@ try
                 rs2_vector accel_data = motion.get_motion_data();
                 accs[ts] = accel_data;
 
+                // Uncomment this to cout the accelerometer timestamps
                 //std::cout << std::fixed << "Acceleration frame Timestamp: \t" << ts << std::endl;
             }
         }
@@ -258,18 +252,18 @@ try
     // Cout and save the dataset intrinsics into a file
     std::cout << std::fixed << std::setprecision(10) << "intrinsics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
     std::ofstream fintrinsics  (data_dir + "/rgb.intrinsics", std::ios_base::out);
-    fintrinsics << std::setprecision(10) << intr.fx      << ", 0.0, "    << intr.ppx << std::endl;
-    fintrinsics << std::setprecision(10) << "0.0, "      << intr.fy      << ", " << intr.ppy << std::endl;
-    fintrinsics << std::setprecision(10) << "0.0, "      << "0.0, "      << "1.0" << std::endl;
+    fintrinsics << std::setprecision(10) << intr.fx << ", 0.0, " << intr.ppx << std::endl;
+    fintrinsics << std::setprecision(10) << "0.0, " << intr.fy << ", " << intr.ppy << std::endl;
+    fintrinsics << std::setprecision(10) << "0.0, " << "0.0, " << "1.0" << std::endl;
     
     std::cout << std::fixed << std::setprecision(10) << "Distortion: " << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
     std::ofstream fdistortion  (data_dir + "/rgb.distortion", std::ios_base::out);
     fdistortion << std::setprecision(10) << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
+    
     // Run the program until we have the requested ammount of frames
     while (depths.size() <= dataset_size)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        // std::lock_guard<std::mutex> lock(mutex);
     }
 
     // Wait for one second to make sure all data have arrived and stop the device
@@ -283,16 +277,7 @@ try
         BEEP_OFF;   // Notify with sound that the camera stoped recording
     }
 
-    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));         
     std::cout << std::fixed;
-    // for (auto i : rgbs)     cout << "Got RGB "    << i.first << endl;
-    // for (auto i : depths)   cout << "Got Depth "  << i.first << endl;
-    // for (auto i : accs)     cout << "Got Acc "    << i.first << endl;
-    // for (auto i : gyrs)     cout << "Got Gyro "   << i.first << endl;
-    
-    // depth_file    << pair._depth._ts << " depth/d" << iframe << ".png" << std::endl;
-    // imu_file	  << pair._rgb._ts   << " imu/i"   << iframe << ".csv" << std::endl;
-    // std::lock_guard<std::mutex> lock(mutex);
 
     // Playback the recorded RGBs
     std::cout << "Playing back " << rgbs.size() << " frames" << std::endl;
@@ -307,37 +292,33 @@ try
     }
 
     // Save the data into files
-    //std::cout << "\nSaving " << rgbs.size() << " RGBs" << "\n";
     int ii = 0;
     for (auto i : rgbs) {
-        std::string namergb = std::string("rgb/r") + std::to_string(ii++) + std::string(".png"); 
+        std::string namergb = std::string("/rgb/r") + std::to_string(ii++) + std::string(".png"); 
         rgb_file << std::fixed << i.first << " " << namergb << std::endl;
         cv::Mat locl_rgb;
         cv::cvtColor  (i.second, locl_rgb, cv::COLOR_BGR2RGB);
         cv::imwrite(data_dir + namergb, locl_rgb);
         std::cout << "Saving RGBs: " << ii << "\r";
     }
-    //std::cout << "\nSaving " << depths.size() << " Depths" << "\n";
     int dd = 0;
     for (auto i : depths) {
-        std::string namedepth = std::string("depth/d") + std::to_string(dd++) + std::string(".png"); 
+        std::string namedepth = std::string("/depth/d") + std::to_string(dd++) + std::string(".png"); 
         depth_file << std::fixed << i.first << " " << namedepth << std::endl;
         cv::imwrite(data_dir + namedepth, depths[i.first]);
         std::cout << "Saving Depths: " << dd << "\r";
     }
-    //std::cout << "\nSaving " << accs.size() << " Accellerations" << "\n";
     int aa = 0;
     for (auto i : accs) {
-        std::string nameacc = std::string("acc/a") + std::to_string(aa++) + std::string(".txt"); 
+        std::string nameacc = std::string("/acc/a") + std::to_string(aa++) + std::string(".txt"); 
         acc_file << std::fixed << i.first << " " << nameacc << std::endl;
         std::ofstream acc_  (data_dir + nameacc, std::ios_base::out);
         acc_ << accs[i.first].x << " " <<  accs[i.first].y << " " << accs[i.first].z << std::endl;
         std::cout << "Saving accels: " << aa << "\r";
     }
     int gg = 0;
-    //std::cout << "\nSaving " << gyrs.size() << " Gyros" << "\n";
     for (auto i : gyrs) {
-        std::string namegyr = std::string("gyr/g") + std::to_string(gg++) + std::string(".txt"); 
+        std::string namegyr = std::string("/gyr/g") + std::to_string(gg++) + std::string(".txt"); 
         gyr_file << std::fixed << i.first << " " << namegyr << std::endl;
         std::ofstream gyr_  (data_dir + namegyr, std::ios_base::out);
         gyr_ << gyrs[i.first].x << " " <<  gyrs[i.first].y << " " << gyrs[i.first].z << std::endl;
@@ -347,14 +328,4 @@ try
     std::cout << "Finished" << "\r" << std::endl;
 
     return EXIT_SUCCESS;
-}
-catch (const rs2::error & e)
-{
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
-    return EXIT_FAILURE;
-}
-catch (const std::exception& e)
-{
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
 }
