@@ -1,33 +1,15 @@
-#ifndef SLAMEXPRESS_LOADER_INDEXER
-#define SLAMEXPRESS_LOADER_INDEXER
+#ifndef REALSENSE_RECORD_LOADER_INDEXREADER
+#define REALSENSE_RECORD_LOADER_INDEXREADER
 
 #include <boost/filesystem.hpp>
 
-/* Indexer loads an index filename from disk, and return its tokens.
- * Each line in the filename is broken into multiple tokens. 
+/* IndexReader
+ * Loads a filename that indexes other filenames.
+ * The columns of each line are treated as a list of tokens.
  */
-class Indexer {
-protected:
-    // convert a string to a series of tokens, seperated by delimiters
-    void tokenize (const std::string &str, std::vector<std::string> &tokens, std::string delimiters = " ")  {
-        tokens.clear();
-
-        std::string::size_type lastPos    = str.find_first_not_of (delimiters, 0);
-        std::string::size_type pos        = str.find_first_of     (delimiters, lastPos);
-
-        while (std::string::npos != pos || std::string::npos != lastPos) {
-            tokens.push_back(str.substr(lastPos, pos - lastPos));
-            lastPos = str.find_first_not_of(delimiters, pos);
-            pos = str.find_first_of(delimiters, lastPos);
-        }
-    }
-
-    std::ifstream _index_file_stream; //the index 
-    std::vector<std::string> tokens;
+class IndexReader {
 public:
-    std::string _directory; //full path to parent directory (dataset main dir)
-    std::string _dataset_name; //name of the parent dir
-
+    // load an index file and retrieve its directory
     bool load_index(std::string index_file) {
         boost::filesystem::path index_file_path(index_file.c_str());
         _directory = index_file_path.parent_path().string();
@@ -35,7 +17,7 @@ public:
 
         _index_file_stream.open(index_file);
         if(_index_file_stream.fail()) {
-            std::cerr << "[Indexer] " << "Error loading index " << index_file << std::endl;
+            std::cerr << "[IndexReader] " << "Error loading index " << index_file << std::endl;
             return false;
         }
         return true;
@@ -86,7 +68,7 @@ public:
 
     // return a string of the full path of the token (appended by the directory)
     std::string get_current_filename(unsigned int token_index=1) {
-        if(token_index>=tokens.size()) std::cerr << "[Indexer] " << "Wrong index passed\n";
+        if(token_index>=tokens.size()) std::cerr << "[IndexReader] " << "Wrong index passed\n";
         std::string fileLoc = _directory;
         fileLoc.append("/");
         fileLoc.append(tokens[token_index]);
@@ -96,7 +78,7 @@ public:
     // cout the tokens of the current line
     void output_current_tokens() {
         std::string stamp = tokens[0];
-        std::cout << "[Indexer]" << "[" << stamp << "] ";
+        std::cout << "[IndexReader]" << "[" << stamp << "] ";
         for(unsigned int i = 1; i < tokens.size(); i++ ) {
             std::string fileLoc = _directory;
             fileLoc.append("/");
@@ -106,6 +88,26 @@ public:
         }
         std::cout << std::endl;
     }
+protected:
+    // convert a string to a series of tokens, seperated by delimiters
+    void tokenize (const std::string &str, std::vector<std::string> &tokens, std::string delimiters = " ")  {
+        tokens.clear();
+
+        std::string::size_type lastPos    = str.find_first_not_of (delimiters, 0);
+        std::string::size_type pos        = str.find_first_of     (delimiters, lastPos);
+
+        while (std::string::npos != pos || std::string::npos != lastPos) {
+            tokens.push_back(str.substr(lastPos, pos - lastPos));
+            lastPos = str.find_first_not_of(delimiters, pos);
+            pos = str.find_first_of(delimiters, lastPos);
+        }
+    }
+
+    std::ifstream _index_file_stream; //the index 
+    std::vector<std::string> tokens; // the list of tokens retrieved from the file
+private:
+    std::string _directory; //full path to parent directory (dataset main dir)
+    std::string _dataset_name; //name of the parent dir
 };
 
 #endif

@@ -6,7 +6,7 @@ If your data is not synchronized, you first must run the synchronization script 
 
 1. First make it an executable:
 ```
-sudo chmod +x ${ROS_WORKSPACE}/realsense_record_publisher/scripts/assoc_rgbdi.py
+sudo chmod +x ${ROS_WORKSPACE}/src/realsense_record_publisher/scripts/assoc_rgbdi.py
 ```
 2. And then execute it:
 ```
@@ -23,3 +23,7 @@ The parameters of the publisher are located in the file ```launch/realsense_reco
 
 #### Installation
 To install the package, copy the realsense_record_publisher directory into your ROS workspace and build it.
+Alternatively, you can create a symbolic link into the ROS WS
+```
+ln -s ROS/realsense_record_publisher ${ROS_WORKSPACE}/src/realsense_record_publisher
+```

@@ -86,7 +86,7 @@ namespace realsense_record_ros_publisher
 			return;
 		}
 
-		if(!InitializeIndexers())
+		if(!InitializeIndexReaders())
 		{
 			ROS_ERROR("Count not initialize the index file readers.\n");
 			ros::shutdown();
@@ -151,7 +151,7 @@ namespace realsense_record_ros_publisher
 		uint32_t seq_id = 0;
 		bool stopped = false;
 
-		bool bdata = true; // true if non of the indexers is eof
+		bool bdata = true; // true if non of the IndexReaders is eof
 		bdata &= _index_rgb->load_data();
 		bdata &= _index_dep->load_data();
 
@@ -273,10 +273,10 @@ namespace realsense_record_ros_publisher
 		return true;
 	}
 
-	bool RealsenseRecordROSPublisher::InitializeIndexers() {
-		// initialize the indexers
-		_index_rgb.reset(new Indexer());
-		_index_dep.reset(new Indexer());
+	bool RealsenseRecordROSPublisher::InitializeIndexReaders() {
+		// initialize the IndexReaders
+		_index_rgb.reset(new IndexReader());
+		_index_dep.reset(new IndexReader());
 
 		if(!_index_rgb->load_index(_dataset_directory + std::string("/rgb_aligned.txt"))) {
 			ROS_WARN("Could not load rgb index file.");

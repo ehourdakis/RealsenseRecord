@@ -25,7 +25,7 @@
 
 #include <experimental/filesystem> 
 
-#include <realsense_record_publisher/indexer.h>
+#include <realsense_record_publisher/index_reader.h>
 #include <Eigen/StdVector>
 
 namespace fs = std::experimental::filesystem;
@@ -97,8 +97,8 @@ namespace realsense_record_ros_publisher
         std::shared_ptr<image_transport::Publisher> _prgb_image_pub_;
         std::shared_ptr<image_transport::Publisher> _pdepth_image_pub_;
         
-        std::shared_ptr<Indexer> _index_rgb;
-        std::shared_ptr<Indexer> _index_dep;
+        std::shared_ptr<IndexReader> _index_rgb;
+        std::shared_ptr<IndexReader> _index_dep;
 
         // The image_transport based image publishers and the image_transport object
 	    std::shared_ptr<image_transport::ImageTransport> _pimage_transport;
@@ -124,7 +124,7 @@ namespace realsense_record_ros_publisher
         bool LoadCalibration();
 
         // Initialize the index file parsers
-        bool InitializeIndexers();
+        bool InitializeIndexReaders();
 
         sensor_msgs::ImagePtr CreateImageMsg(
             const cv::Mat_<uchar>& image, 
