@@ -181,7 +181,7 @@ namespace realsense_record_ros_publisher
 			rgb_info.width = rgb_frame.cols;
 			rgb_info.distortion_model = "plumb_bob";
 			rgb_info.D = {_rgb_calibration->k1, _rgb_calibration->k2, 
-						  _rgb_calibration->k3, _rgb_calibration->p1, _rgb_calibration->p2};
+						  _rgb_calibration->p1, _rgb_calibration->p2, _rgb_calibration->k3};
 			rgb_info.K = {_rgb_calibration->fx, 0, _rgb_calibration->cx,
 							0, _rgb_calibration->fy, _rgb_calibration->cy,
 							0, 0, 1.0};
@@ -271,10 +271,10 @@ namespace realsense_record_ros_publisher
 			return false;
 		}
 		
-		_rgb_calibration->p1 = dist_coeffs_eig(0,0);
-		_rgb_calibration->p2 = dist_coeffs_eig(0,1);
-		_rgb_calibration->k1 = dist_coeffs_eig(0,2);
-		_rgb_calibration->k2 = dist_coeffs_eig(0,3);
+		_rgb_calibration->k1 = dist_coeffs_eig(0,0);
+		_rgb_calibration->k2 = dist_coeffs_eig(0,1);
+		_rgb_calibration->p1 = dist_coeffs_eig(0,2);
+		_rgb_calibration->p2 = dist_coeffs_eig(0,3);
 		_rgb_calibration->k3 = dist_coeffs_eig(0,4);
 
 		ROS_INFO_STREAM("Distortion. p1: " << _rgb_calibration->p1 << " p2: " << _rgb_calibration->p2 << " k1: " << _rgb_calibration->k1 << " k2: " << _rgb_calibration->k2 << " k3: " << _rgb_calibration->k3);
