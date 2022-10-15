@@ -127,7 +127,7 @@ namespace realsense_record_ros_publisher
         bool InitializeIndexReaders();
 
         sensor_msgs::ImagePtr CreateDepthImageMsg(
-            const cv::Mat_<uchar>& image, 
+            const cv::Mat& image, 
             const ros::Time& stamp);
 
         sensor_msgs::ImagePtr CreateRGBImageMsg(

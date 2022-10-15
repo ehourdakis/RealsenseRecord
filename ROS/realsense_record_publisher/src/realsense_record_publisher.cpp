@@ -127,14 +127,14 @@ namespace realsense_record_ros_publisher
     }
 
     sensor_msgs::ImagePtr RealsenseRecordROSPublisher::CreateDepthImageMsg(
-		const cv::Mat_<uchar>& opencv_image, 
+		const cv::Mat& opencv_image, 
 		const ros::Time& stamp)
 	{
 		std_msgs::Header header;
 		header.stamp = stamp;
 		sensor_msgs::ImagePtr pimage_msg = cv_bridge::CvImage(
 			header, 
-			"mono8", 
+			"mono16", 
 			opencv_image).toImageMsg();
 		
 		return pimage_msg;
@@ -171,6 +171,9 @@ namespace realsense_record_ros_publisher
 		{
 			cv::Mat rgb_frame = cv::imread(_index_rgb->get_current_filename(),-1);
 			cv::Mat depth_frame = cv::imread(_index_dep->get_current_filename(),-1);
+
+			// cv::imshow("test", depth_frame);
+			// cv::waitKey(1);
 		
 			// Create rgb camera info messages
 			sensor_msgs::CameraInfo rgb_info;
