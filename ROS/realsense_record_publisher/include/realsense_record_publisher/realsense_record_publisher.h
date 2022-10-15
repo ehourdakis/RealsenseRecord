@@ -72,10 +72,10 @@ namespace realsense_record_ros_publisher
         RealsenseRecordROSPublisher(
             const ros::NodeHandle& nh, 
             const ros::NodeHandle& nhp, 
-            const std::string& rgb_info_topic_name = "/camera/color/camera_info",
-		    const std::string& rgb_image_topic_name = "/camera/color/image_raw", 
-		    const std::string& depth_info_topic_name = "/camera/depth/camera_info",
-		    const std::string& depth_image_topic_name = "/camera/depth/image_raw");
+            const std::string& rgb_info_topic_name = "/camera/rgb/camera_info",
+		    const std::string& rgb_image_topic_name = "/camera/rgb/image_raw", 
+		    const std::string& depth_info_topic_name = "/camera/depth_registered/camera_info",
+		    const std::string& depth_image_topic_name = "/camera/depth_registered/image_raw");
     
         ~RealsenseRecordROSPublisher();
     private:
@@ -126,8 +126,12 @@ namespace realsense_record_ros_publisher
         // Initialize the index file parsers
         bool InitializeIndexReaders();
 
-        sensor_msgs::ImagePtr CreateImageMsg(
+        sensor_msgs::ImagePtr CreateDepthImageMsg(
             const cv::Mat_<uchar>& image, 
+            const ros::Time& stamp);
+
+        sensor_msgs::ImagePtr CreateRGBImageMsg(
+            const cv::Mat& image, 
             const ros::Time& stamp);
     };
 

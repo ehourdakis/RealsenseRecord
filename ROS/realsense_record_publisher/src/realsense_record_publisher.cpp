@@ -126,17 +126,29 @@ namespace realsense_record_ros_publisher
 		}
     }
 
-    sensor_msgs::ImagePtr RealsenseRecordROSPublisher::CreateImageMsg(
+    sensor_msgs::ImagePtr RealsenseRecordROSPublisher::CreateDepthImageMsg(
 		const cv::Mat_<uchar>& opencv_image, 
 		const ros::Time& stamp)
 	{
-
-		// Create ROS image messages
 		std_msgs::Header header;
 		header.stamp = stamp;
 		sensor_msgs::ImagePtr pimage_msg = cv_bridge::CvImage(
 			header, 
 			"mono8", 
+			opencv_image).toImageMsg();
+		
+		return pimage_msg;
+	}
+
+    sensor_msgs::ImagePtr RealsenseRecordROSPublisher::CreateRGBImageMsg(
+		const cv::Mat& opencv_image, 
+		const ros::Time& stamp)
+	{
+		std_msgs::Header header;
+		header.stamp = stamp;
+		sensor_msgs::ImagePtr pimage_msg = cv_bridge::CvImage(
+			header, 
+			"bgr8", 
 			opencv_image).toImageMsg();
 		
 		return pimage_msg;
@@ -160,16 +172,13 @@ namespace realsense_record_ros_publisher
 			cv::Mat rgb_frame = cv::imread(_index_rgb->get_current_filename(),-1);
 			cv::Mat depth_frame = cv::imread(_index_dep->get_current_filename(),-1);
 		
-			cv::Mat_<uchar> rgb_gray(rgb_frame.rows, rgb_frame.cols); 
-			cv::cvtColor(rgb_frame, rgb_gray, cv::COLOR_BGR2GRAY);
-			
 			// Create rgb camera info messages
 			sensor_msgs::CameraInfo rgb_info;
 			rgb_info.header.seq = seq_id;
 			rgb_info.header.stamp = _simulation_time;
 			rgb_info.header.frame_id = "camera_color_optical_frame";
-			rgb_info.height = rgb_gray.rows;
-			rgb_info.width = rgb_gray.cols;
+			rgb_info.height = rgb_frame.rows;
+			rgb_info.width = rgb_frame.cols;
 			rgb_info.distortion_model = "plumb_bob";
 			rgb_info.D = {_rgb_calibration->k1, _rgb_calibration->k2, 
 						  _rgb_calibration->k3, _rgb_calibration->p1, _rgb_calibration->p2};
@@ -188,8 +197,8 @@ namespace realsense_record_ros_publisher
 			depth_info.header.seq = seq_id;
 			depth_info.header.stamp = _simulation_time;
 			depth_info.header.frame_id = "camera_depth_optical_frame";
-			depth_info.height = rgb_gray.rows;
-			depth_info.width = rgb_gray.cols;
+			depth_info.height = depth_frame.rows;
+			depth_info.width = depth_frame.cols;
 			depth_info.distortion_model = "plumb_bob";
 			depth_info.D = {0, 0, 0, 0, 0};
 			depth_info.K = {_rgb_calibration->fx, 0, _rgb_calibration->cx,
@@ -203,9 +212,9 @@ namespace realsense_record_ros_publisher
 			_pdepth_info_pub_->publish(depth_info);
 
 			// Publish images
-			sensor_msgs::ImagePtr rgb_gray_msg = CreateImageMsg(rgb_gray, _simulation_time);
-			_prgb_image_pub_->publish(rgb_gray_msg);
-			sensor_msgs::ImagePtr depth_frame_msg = CreateImageMsg(depth_frame, _simulation_time);
+			sensor_msgs::ImagePtr rgb_frame_msg = CreateRGBImageMsg(rgb_frame, _simulation_time);
+			_prgb_image_pub_->publish(rgb_frame_msg);
+			sensor_msgs::ImagePtr depth_frame_msg = CreateDepthImageMsg(depth_frame, _simulation_time);
 			_pdepth_image_pub_->publish(depth_frame_msg);
 
 			ROS_INFO_STREAM("Frame " << seq_id);
