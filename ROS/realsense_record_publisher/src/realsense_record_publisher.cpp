@@ -171,9 +171,6 @@ namespace realsense_record_ros_publisher
 		{
 			cv::Mat rgb_frame = cv::imread(_index_rgb->get_current_filename(),-1);
 			cv::Mat depth_frame = cv::imread(_index_dep->get_current_filename(),-1);
-
-			// cv::imshow("test", depth_frame);
-			// cv::waitKey(1);
 		
 			// Create rgb camera info messages
 			sensor_msgs::CameraInfo rgb_info;
