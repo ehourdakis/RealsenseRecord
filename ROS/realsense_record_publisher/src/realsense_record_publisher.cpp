@@ -53,6 +53,31 @@ namespace realsense_record_ros_publisher
 			ros::shutdown();
 			return;
 		}
+        if (!nhp_.getParam("rgb_info_topic_name", _rgb_info_topic_name))
+		{
+			ROS_ERROR("rgb info topic name not set.\n");
+			ros::shutdown();
+			return;
+		}
+        if (!nhp_.getParam("rgb_image_topic_name", _rgb_image_topic_name))
+		{
+			ROS_ERROR("rgb image topic name not set.\n");
+			ros::shutdown();
+			return;
+		}
+        if (!nhp_.getParam("depth_info_topic_name", _depth_info_topic_name))
+		{
+			ROS_ERROR("depth info topic name not set.\n");
+			ros::shutdown();
+			return;
+		}
+        if (!nhp_.getParam("depth_image_topic_name", _depth_image_topic_name))
+		{
+			ROS_ERROR("depth image topic name not set.\n");
+			ros::shutdown();
+			return;
+		}
+
 		if (!fs::exists(_dataset_directory)) {
 			ROS_ERROR("Directory does not exist");
 			ros::shutdown();

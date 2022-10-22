@@ -10,6 +10,7 @@
 #include <mutex>
 #include <thread>
 #include <memory>
+#include <experimental/filesystem> 
 
 #include <ros/ros.h>
 #include <std_msgs/Header.h>
@@ -22,8 +23,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-
-#include <experimental/filesystem> 
 
 #include <realsense_record_publisher/index_reader.h>
 #include <Eigen/StdVector>
