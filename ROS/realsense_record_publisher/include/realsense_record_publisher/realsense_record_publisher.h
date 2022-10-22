@@ -80,11 +80,11 @@ namespace realsense_record_ros_publisher
     private:
         unsigned int _fps = 30;
         bool _paused = true;
-        std::string _dataset_directory;
-        std::string _rgb_index_file;
-        std::string _rgb_calibration_filename;
-        std::string _rgb_distortion_coefficients_filename;
-        std::string _depth_index_file;
+        fs::path _dataset_directory;
+        fs::path _rgb_index_file;
+        fs::path _rgb_calibration_filename;
+        fs::path _rgb_distortion_coefficients_filename;
+        fs::path _depth_index_file;
         
         std::string _rgb_image_topic_name;
         std::string _rgb_info_topic_name;

@@ -112,7 +112,7 @@ A more detailed discussion on timestamping and the IMU frames can be found [here
 
 *Each IMU data packet is timestamped using the depth sensor hardware clock to allow temporal synchronization between gyro, accel and depth frames.*
 ## [Calibration of the RGB and Depth sensors](#CalibratingRGBD)
-**Calibration of the depth sensor** can improve depth precision and correct “intrinsic” or “extrinsic” distortions. It can be run from the GUI of the realsense-viewer, using the process described in the following [link](https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras). 
+**Calibration of the depth sensor** can improve depth precision and correct “intrinsic” or “extrinsic” distortions. It can be run from the GUI of the realsense-viewer, using the process described in the following [link](https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras). You can read more on the projection model in Realsense SDK 2.0 [here](https://github.com/IntelRealSense/librealsense/wiki/Projection-in-RealSense-SDK-2.0#distortion-models).
 
 **Calibration of the RGB sensor** can be accomplished using the Intel Dynamic Calibration Tool, which can be installed by executing the script **scripts/installation/install_realsense_calibrationtool.sh**. After calibration, the data are stored on chip, and can be accessed by the SDK. A complete guide describing the process can be found here: [Calibration use guide](https://dev.intelrealsense.com/docs/intel-realsensetm-d400-series-calibration-tools-user-guide). 
 To retrieve the calibration data stored in the device by a previous calibration, execute the script **scripts/postprocess/store_calibration.sh**, by passing the width and height of the camera resolution:
@@ -155,4 +155,7 @@ When possible, record your data when there is abundant natural lighting in the s
 HW synchronization of multiple cameras is described in this [white paper](https://dev.intelrealsense.com/docs/external-synchronization-of-intel-realsense-depth-cameras?_ga=2.163875643.506586051.1643829742-1302374545.1643264215).
 
 ## [Docker](#Docker)
-The folder **Docker** includes a Dockerfile and a pre-compiled library, for running the recorder seamlessly. Please refer to the [Docker/README.md](Docker/README.md) for more information on installing and executing this contained application. 
+The folder **Docker** includes a Dockerfile and a pre-compiled library, for running the recorder seamlessly. Please refer to the [Docker/README.md](Docker/README.md) for more information on installing and executing this contained application.
+
+## ROS
+The folder **ROS** includes packages for running the application in a ROS environment. Please refer to the [ROS/README.md](ROS/README.md) for more information.
