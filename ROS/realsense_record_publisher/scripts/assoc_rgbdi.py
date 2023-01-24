@@ -150,6 +150,8 @@ if __name__ == '__main__':
     parser.add_argument('--first_only', help='only output associated lines from first file', action='store_true')
     parser.add_argument('--offset', help='time offset added to the timestamps of the second file (default: 0.0)',default=0.0)
     parser.add_argument('--max_difference', help='maximally allowed time difference for matching entries (default: 0.02)',default=0.02)
+    parser.add_argument("--output_dir", help="path to output directory")
+    parser.add_argument('--verbose','-v', help='', action='store_true')
     args = parser.parse_args()
 
     if not os.path.exists(args.dataset_directory):
@@ -191,13 +193,17 @@ if __name__ == '__main__':
     acc_keys    = list(acc_list)#.keys()
     gyr_keys    = list(gyr_list)#.keys()
 
+    if args.output_dir is None:
+        output_directory = args.dataset_directory
+    else:
+        output_directory = args.output_dir
     matches_acc     = []
-    depth_aligned   = open(args.dataset_directory + "/depth_aligned.txt","w")
-    rgb_aligned     = open(args.dataset_directory + "/rgb_aligned.txt","w")
-    imu_aligned     = open(args.dataset_directory + "/imu_aligned.txt","w")
+    depth_aligned   = open(output_directory + "/depth_aligned.txt","w")
+    rgb_aligned     = open(output_directory + "/rgb_aligned.txt","w")
+    imu_aligned     = open(output_directory + "/imu_aligned.txt","w")
 
-    if not os.path.exists(args.dataset_directory + "/imu/"):
-        os.mkdir(args.dataset_directory + "/imu/")
+    if not os.path.exists(output_directory + "/imu/"):
+        os.mkdir(output_directory + "/imu/")
     index = 0
 
     for d,r in matches_depthrgb: 
@@ -205,10 +211,10 @@ if __name__ == '__main__':
         rgb_aligned.write('%f %s\n' % (r, rgb_list.get(r)))
         imu_aligned.write('%f imu/i%d.csv\n' % (d,index))
         
-        txt = args.dataset_directory + "/imu/i{index:d}.csv"
+        txt = output_directory + "/imu/i{index:d}.csv"
         #print(txt.format(index = index))
         imu_frame_file = open(txt.format(index = index),"w")
-        print("Matched ... Depth Timestamp: %f Depth file: %s RGB Timestamp: %f RGB file: %s"%(d,depth_list.get(d),r, str(rgb_list.get(r))))
+        if(args.verbose): print("Matched ... Depth Timestamp: %f Depth file: %s RGB Timestamp: %f RGB file: %s"%(d,depth_list.get(d),r, str(rgb_list.get(r))))
         for d2,a in matches_depthacc: 
             if d == d2: 
                 for a2,g in matches_accgyr:
@@ -220,11 +226,10 @@ if __name__ == '__main__':
                         #print("%f %s %s"%(a2,str_acc,str_gyr))
 
                         imu_frame_file.write('%f %s %s\n'%(a2, str_acc, str_gyr))
-                        print("\t\tAcc Timestamp: %f Accelorometer file: %s Gyroscope Timestamp: %f Gyroscope file: %s"%(a2,acc_list.get(a2),g, gyr_list.get(g)))
+                        if(args.verbose): print("\t\tAcc Timestamp: %f Accelerometer file: %s Gyroscope Timestamp: %f Gyroscope file: %s"%(a2,acc_list.get(a2),g, gyr_list.get(g)))
 
         index = index+1
 
     depth_aligned.close()
     rgb_aligned.close()
     imu_aligned.close()
-        
