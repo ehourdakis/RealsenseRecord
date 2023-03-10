@@ -17,7 +17,7 @@ evo_config set plot_figsize 12 7
 #evo_config set plot_axis_marker_scale 0.1
 evo_config set plot_pose_correspondences false
 
-evo_ape tum "$1/synced_estimated_poses.csv" "$1/synced_gt_tum.csv"  -sa -r=trans_part  --plot --save_results $1/out.zip
+evo_ape tum "$1/synced_estimated_poses.csv" "$1/synced_gt_tum.csv"  -sa -r=trans_part --align_origin  --save_results $1/out.zip
 #evo_rpe tum "$1/synced_estimated_poses.csv" "$1/synced_gt_tum.csv" -as -r=angle_deg --plot
 #evo_traj tum "$1/synced_estimated_poses.csv" --ref="$1/synced_gt_tum.csv" -v -sa --align_origin --sync --plot
 #evo_traj tum "$1/synced_estimated_poses.csv" --ref="$1/synced_gt_tum.csv" -a -v --align_origin --sync --plot

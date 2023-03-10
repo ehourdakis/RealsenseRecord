@@ -115,6 +115,8 @@ namespace realsense_record_ros_publisher
 			return;
 		}
 
+		_rgb_calibration = std::make_unique<CameraCalibrationEntry>();
+
 		// Retrieve RealsenseRecord stored calibration from file
 		if(!LoadCalibration())
 		{
@@ -131,20 +133,20 @@ namespace realsense_record_ros_publisher
 		}
 		
 		// Initialize CameraInfo publishers
-  		_prgb_info_pub_ = std::make_shared<ros::Publisher>( 
+  		_prgb_info_pub_ = std::make_unique<ros::Publisher>( 
 			nh_.advertise<sensor_msgs::CameraInfo>(_rgb_info_topic_name, 5) );
 		
-		_pdepth_info_pub_ = std::make_shared<ros::Publisher>( 
+		_pdepth_info_pub_ = std::make_unique<ros::Publisher>( 
 			nh_.advertise<sensor_msgs::CameraInfo>(_depth_info_topic_name, 5) );
 
 		// Initialize the image transport object
 		_pimage_transport.reset( new image_transport::ImageTransport(nh) );
 		
 		// Image publishers
-		_prgb_image_pub_ = std::make_shared<image_transport::Publisher>( 
+		_prgb_image_pub_ = std::make_unique<image_transport::Publisher>( 
 			_pimage_transport->advertise(_rgb_image_topic_name, 1) );
 		
-		_pdepth_image_pub_ = std::make_shared<image_transport::Publisher>( 
+		_pdepth_image_pub_ = std::make_unique<image_transport::Publisher>( 
 			_pimage_transport->advertise(_depth_image_topic_name, 1) );
 
 		// Start the main loop
@@ -282,9 +284,7 @@ namespace realsense_record_ros_publisher
 	}
 
 	bool RealsenseRecordROSPublisher::LoadCalibration()
-	{
-		_rgb_calibration = std::make_shared<CameraCalibrationEntry>();
-		
+	{	
 		// load the rgb intrinsics data
 		Eigen::Matrix3d intrinsics_eig; 
 		bool loaded = load_matrix_from_file<Eigen::Matrix3d, double> (_dataset_directory / _rgb_calibration_filename, ',', intrinsics_eig);

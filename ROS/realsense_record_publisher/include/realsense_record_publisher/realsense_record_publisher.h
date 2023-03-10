@@ -91,22 +91,22 @@ namespace realsense_record_ros_publisher
         std::string _depth_image_topic_name;
         std::string _depth_info_topic_name;
 
-        std::shared_ptr<ros::Publisher> _prgb_info_pub_;
-        std::shared_ptr<ros::Publisher> _pdepth_info_pub_;
-        std::shared_ptr<image_transport::Publisher> _prgb_image_pub_;
-        std::shared_ptr<image_transport::Publisher> _pdepth_image_pub_;
+        std::unique_ptr<ros::Publisher> _prgb_info_pub_;
+        std::unique_ptr<ros::Publisher> _pdepth_info_pub_;
+        std::unique_ptr<image_transport::Publisher> _prgb_image_pub_;
+        std::unique_ptr<image_transport::Publisher> _pdepth_image_pub_;
         
-        std::shared_ptr<IndexReader> _index_rgb;
-        std::shared_ptr<IndexReader> _index_dep;
+        std::unique_ptr<IndexReader> _index_rgb;
+        std::unique_ptr<IndexReader> _index_dep;
 
         // The image_transport based image publishers and the image_transport object
-	    std::shared_ptr<image_transport::ImageTransport> _pimage_transport;
+	    std::unique_ptr<image_transport::ImageTransport> _pimage_transport;
 
         // The main loop thread
         std::unique_ptr<std::thread> _pmain_loop_thread;
 
-        // The calibrations retrieved by the realsense camera
-        std::shared_ptr<CameraCalibrationEntry> _rgb_calibration;
+        // The calibration for the rgb camera
+        std::unique_ptr<CameraCalibrationEntry> _rgb_calibration;
         
         // Simulation time
         ros::Time _simulation_time;
@@ -125,10 +125,12 @@ namespace realsense_record_ros_publisher
         // Initialize the index file parsers
         bool InitializeIndexReaders();
 
+        // Create a depth ros image (mono16)
         sensor_msgs::ImagePtr CreateDepthImageMsg(
             const cv::Mat& image,
             const ros::Time& stamp);
 
+        // Create a color ros image (bgr8)
         sensor_msgs::ImagePtr CreateRGBImageMsg(
             const cv::Mat& image, 
             const ros::Time& stamp);
