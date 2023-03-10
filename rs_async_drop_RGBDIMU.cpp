@@ -15,7 +15,7 @@ int main(int argc, char * argv[])
 {
     if(argc < 3) { 
         std::cout << "Not enough parameters. Please run as: rs_async_drop_RGBDIMU [DATASET_DIRECTORY] [DATASET_SIZE] [OPTICAL_FRAMERATE] "\
-            "[FRAME_WIDTH] [FRAME_HEIGHT] [ACC_FRAMERATE] [GYRO_FRAMERATE] [RGB_EXPOSURE]\n";
+            "[FRAME_WIDTH] [FRAME_HEIGHT] [ACC_FRAMERATE] [GYRO_FRAMERATE] [RGB_EXPOSURE] [DEPTH_EXPOSURE]\n";
         return -1;
     }
 
@@ -35,6 +35,7 @@ int main(int argc, char * argv[])
     int frame_width = 640;
     int frame_height = 360;
     int rgb_exposure = 1000;
+    int depth_exposure = 10;
 
     if(argc > 1) data_dir = std::string(argv[1]);
     if(argc > 2) dataset_size = atoi(argv[2]);
@@ -43,7 +44,8 @@ int main(int argc, char * argv[])
     if(argc > 5) frame_height = atoi(argv[5]);
     if(argc > 6) acc_framerate = atoi(argv[6]);
     if(argc > 7) gyro_framerate = atoi(argv[7]);
-    if(argc > 8) rgb_exposure = atoi(argv[7]);
+    if(argc > 8) rgb_exposure = atoi(argv[8]);
+    if(argc > 9) depth_exposure = atoi(argv[9]);
 
     std::cout << "Recording " << dataset_size << " frames in " << data_dir << std::endl;
     std::cout << "Optical FPS: " << opt_framerate << "\nAccelerometer FPS: " << acc_framerate << "\nGyroscope FPS: " << gyro_framerate << "\nImage Width: " << frame_width << "\nImage Height: " << frame_height << std::endl;
@@ -114,7 +116,7 @@ int main(int argc, char * argv[])
     {
         dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
         dev.query_sensors()[1].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-        dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_EXPOSURE, 10);
+        dev.query_sensors()[0].set_option(rs2_option::RS2_OPTION_EXPOSURE, depth_exposure);
         dev.query_sensors()[1].set_option(rs2_option::RS2_OPTION_EXPOSURE, rgb_exposure);
     }
     catch (const rs2::error & e)
