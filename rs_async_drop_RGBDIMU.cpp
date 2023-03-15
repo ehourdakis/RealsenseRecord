@@ -10,14 +10,146 @@
 #include <mutex>
 #include <thread>
 #include <fstream>
+#include <boost/program_options.hpp> // command line argument options
+#include <boost/algorithm/string.hpp>
+
+namespace po = boost::program_options;
+
+// Table of acceptable frame size / fps pairs for the D455 camera.
+std::map<std::pair<int, int>, std::vector<int>> fps_table = {
+    {{1280, 800}, {30, 15, 10, 5}},
+    {{1280, 720}, {30, 15, 10, 5}},
+    {{848, 480}, {60, 30, 15, 5}},
+    {{640, 480}, {60, 30, 15, 5}},
+    {{640, 360}, {90, 60, 30, 15, 5}},
+    {{480, 270}, {90, 60, 30, 15, 5}}
+};
+
+// validate the value of the accelerometer fps
+bool validate_acc_fps(const int option_value) {
+  const std::vector<int> allowed_values = {250, 63}; // allowed values
+  if (std::find(allowed_values.begin(), allowed_values.end(), option_value) == allowed_values.end()) {
+    std::cout << "Invalid accelerometer fps. Allowed values are {250, 63}\n";
+    return false;
+  }
+  return true;
+}
+
+// validate the value of the gyroscope fps
+bool validate_gyro_fps(const int option_value) {
+  const std::vector<int> allowed_values = {400, 200}; // allowed values
+  if (std::find(allowed_values.begin(), allowed_values.end(), option_value) == allowed_values.end()) {
+    std::cout << "Invalid gyro fps. Allowed values are {400, 200}\n";
+    return false;
+  }
+  return true;
+}
+
+// validate whether the combination frame size / fps exists
+bool validate_frame_properties(int frame_width, int frame_height, int opt_framerate) {
+    auto it = fps_table.find({frame_width, frame_height});
+    if (it == fps_table.end()) {
+        std::cout << "Invalid frame resolution: " << std::to_string(frame_width) << "x" << std::to_string(frame_height) << std::endl;
+        std::cout << "Available resolutions are: " << std::endl;
+        for (auto f : fps_table) {
+            std::cout << "  " << f.first.first << "x" << f.first.second << std::endl;
+        }
+
+        return false;
+    }
+
+    int fps = opt_framerate;
+    auto fps_vec = it->second;
+    if (std::find(fps_vec.begin(), fps_vec.end(), fps) == fps_vec.end()) {
+        std::cout << "Invalid frame rate for resolution " << frame_width << "x" << std::to_string(frame_height) << ": " << std::to_string(opt_framerate) << std::endl;
+        std::cout << "Available framerates for " << frame_width << "x" << frame_height << ":" << std::endl;
+        for (auto f : fps_vec) {
+            std::cout << "  " << f << " Hz" << std::endl;
+        }
+
+        return false;
+    }
+
+    return true;
+}
 
 int main(int argc, char * argv[]) 
 {
-    if(argc < 3) { 
-        std::cout << "Not enough parameters. Please run as: rs_async_drop_RGBDIMU [DATASET_DIRECTORY] [DATASET_SIZE] [OPTICAL_FRAMERATE] "\
-            "[FRAME_WIDTH] [FRAME_HEIGHT] [ACC_FRAMERATE] [GYRO_FRAMERATE] [RGB_EXPOSURE] [DEPTH_EXPOSURE]\n";
+    // Default application parameters 
+    std::string data_dir = "/home/";
+    int dataset_size = 500;
+    int opt_framerate = 90;
+    int frame_width = 640;
+    int frame_height = 360;
+    int acc_framerate = 255;
+    int gyro_framerate = 400;
+    int rgb_exposure = 200;
+    int depth_exposure = 10;
+
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help,h", "Help message")
+        ("dataset_dir", po::value<std::string>(&data_dir)->required(), "Directory to save the recorded dataset")
+        ("dataset_size", po::value<int>(&dataset_size)->required(), "Size of the recorded dataset")
+        ("rgb_fps", po::value<int>(&opt_framerate)->required(), "Depth frame rate")
+        ("frame_width", po::value<int>(&frame_width)->default_value(640), "Frame width")
+        ("frame_height", po::value<int>(&frame_height)->default_value(360), "Frame height")
+        ("acc_framerate", po::value<int>(&acc_framerate)->default_value(250), "Accelerometer framerate")
+        ("gyro_framerate", po::value<int>(&gyro_framerate)->default_value(400), "Gyroscope framerate")
+        ("rgb_exposure", po::value<int>(&rgb_exposure)->default_value(200), "RGB exposure")
+        ("depth_exposure", po::value<int>(&depth_exposure)->default_value(10), "Depth exposure");
+
+    po::positional_options_description p;
+    p.add("dataset_dir", 1)
+     .add("dataset_size", 1)
+     .add("rgb_fps", 1)
+     .add("frame_width", 1)
+     .add("frame_height", 1)
+     .add("acc_framerate", 1)
+     .add("gyro_framerate", 1)
+     .add("rgb_exposure", 1)
+     .add("depth_exposure", 1);
+
+    po::variables_map vm;
+    try {
+        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+        
+        if (vm.count("help")) {
+            std::cout << "RealsenseRecord. Record sensor data from a realsense camera" << std::endl << std::endl;
+            std::cout << "Run as: " << std::endl;
+            std::cout << argv[0] << "data/ 1000 30" << std::endl << std::endl << std::endl;
+
+            std::cout << desc << "\n";
+
+            std::cout << "Available camera frame size / frame rates:" << std::endl;
+            for (const auto& kv : fps_table) {
+                int width = kv.first.first;
+                int height = kv.first.second;
+                const auto& fps_vec = kv.second;
+                
+                std::cout << "  " << width << "x" << height << ": ";
+                for (size_t i = 0; i < fps_vec.size(); ++i) {
+                    if (i > 0) std::cout << ", ";
+                    std::cout << fps_vec[i];
+                }
+                std::cout << std::endl;
+            }
+
+            return 0;
+        }
+
+        po::notify(vm);
+    } catch (const po::error &e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Usage: " << argv[0] << " [options]\n";
+        std::cerr << desc;
         return -1;
     }
+    
+    if( !validate_frame_properties(frame_width, frame_height, opt_framerate) ||
+        !validate_acc_fps(acc_framerate) || 
+        !validate_gyro_fps(gyro_framerate) )
+        return -1;
 
     if (!check_imu_is_supported()) {
         std::cerr << "No realsense device with IMU support found. Exiting.\n";
@@ -25,28 +157,6 @@ int main(int argc, char * argv[])
     }
 
     std::cout << "RealSense Record - Asynchronious mode.\n";
-
-    // Application parameters (parsed from cmd line arguments)
-    int dataset_size        = 500;
-    std::string data_dir    = "/home/";
-    int opt_framerate = 90;
-    int acc_framerate = 255;
-    int gyro_framerate = 400;
-    int frame_width = 640;
-    int frame_height = 360;
-    int rgb_exposure = 1000;
-    int depth_exposure = 10;
-
-    if(argc > 1) data_dir = std::string(argv[1]);
-    if(argc > 2) dataset_size = atoi(argv[2]);
-    if(argc > 3) opt_framerate = atoi(argv[3]);
-    if(argc > 4) frame_width = atoi(argv[4]);
-    if(argc > 5) frame_height = atoi(argv[5]);
-    if(argc > 6) acc_framerate = atoi(argv[6]);
-    if(argc > 7) gyro_framerate = atoi(argv[7]);
-    if(argc > 8) rgb_exposure = atoi(argv[8]);
-    if(argc > 9) depth_exposure = atoi(argv[9]);
-
     std::cout << "Recording " << dataset_size << " frames in " << data_dir << std::endl;
     std::cout << "Optical FPS: " << opt_framerate << "\nAccelerometer FPS: " << acc_framerate << "\nGyroscope FPS: " << gyro_framerate << "\nImage Width: " << frame_width << "\nImage Height: " << frame_height << std::endl;
 
@@ -150,11 +260,11 @@ int main(int argc, char * argv[])
     try
     {
         cfg.enable_device(serial);
-        cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F,   250);
-        cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F,   400);
+        cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F, acc_framerate);
+        cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F, gyro_framerate);
 
-        cfg.enable_stream(RS2_STREAM_DEPTH,     frame_width,  frame_height,      RS2_FORMAT_Z16,   opt_framerate);    
-        cfg.enable_stream(RS2_STREAM_COLOR,     frame_width,  frame_height,      RS2_FORMAT_RGB8,  opt_framerate);
+        cfg.enable_stream(RS2_STREAM_DEPTH, frame_width, frame_height, RS2_FORMAT_Z16,  opt_framerate);    
+        cfg.enable_stream(RS2_STREAM_COLOR, frame_width, frame_height, RS2_FORMAT_RGB8, opt_framerate);
     }
     catch (const rs2::error & e)
     {
@@ -193,7 +303,9 @@ int main(int argc, char * argv[])
         };
 
         // Cout the recorded data sizes
-        std::cout << "Recording " << (int)dataset_size << " (depth) frames " << "Depths: " << depths.size() << " RGBs: " << rgbs.size() << " Accs " << accs.size() << " Gyrs " << gyrs.size() << "\r";//std::endl; 
+        std::cout << "Recording " << (int)dataset_size << " (depth) frames " 
+            << "Depths: " << depths.size() << " RGBs: " << rgbs.size() 
+            << " Accs " << accs.size() << " Gyrs " << gyrs.size() << "\r";//std::endl; 
         
         // Retrieve RGB and depth frames as one frameset.
         if (rs2::frameset fs = frame.as<rs2::frameset>())
@@ -254,13 +366,15 @@ int main(int argc, char * argv[])
     rs2_distortion model    = intr.model;
 
     // Cout and save the dataset intrinsics into a file
-    std::cout << std::fixed << std::setprecision(10) << "intrinsics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
+    std::cout << std::fixed << std::setprecision(4) << "Intrinsics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
+    
     std::ofstream fintrinsics  (data_dir + "/rgb.intrinsics", std::ios_base::out);
     fintrinsics << std::setprecision(10) << intr.fx << ", 0.0, " << intr.ppx << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, " << intr.fy << ", " << intr.ppy << std::endl;
     fintrinsics << std::setprecision(10) << "0.0, " << "0.0, " << "1.0" << std::endl;
     
-    std::cout << std::fixed << std::setprecision(10) << "Distortion: " << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
+    std::cout << std::fixed << std::setprecision(4) << "Distortion: [" << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << "]" << std::endl;
+    
     std::ofstream fdistortion  (data_dir + "/rgb.distortion", std::ios_base::out);
     fdistortion << std::setprecision(10) << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
     
@@ -298,33 +412,33 @@ int main(int argc, char * argv[])
     // Save the data into files
     int ii = 0;
     for (auto i : rgbs) {
-        std::string namergb = std::string("/rgb/r") + std::to_string(ii++) + std::string(".png"); 
+        std::string namergb = std::string("rgb/r") + std::to_string(ii++) + std::string(".png"); 
         rgb_file << std::fixed << i.first << " " << namergb << std::endl;
         cv::Mat locl_rgb;
         cv::cvtColor  (i.second, locl_rgb, cv::COLOR_BGR2RGB);
-        cv::imwrite(data_dir + namergb, locl_rgb);
+        cv::imwrite(data_dir + std::string("/") + namergb, locl_rgb);
         std::cout << "Saving RGBs: " << ii << "\r";
     }
     int dd = 0;
     for (auto i : depths) {
-        std::string namedepth = std::string("/depth/d") + std::to_string(dd++) + std::string(".png"); 
+        std::string namedepth = std::string("depth/d") + std::to_string(dd++) + std::string(".png"); 
         depth_file << std::fixed << i.first << " " << namedepth << std::endl;
-        cv::imwrite(data_dir + namedepth, depths[i.first]);
+        cv::imwrite(data_dir + std::string("/") + namedepth, depths[i.first]);
         std::cout << "Saving Depths: " << dd << "\r";
     }
     int aa = 0;
     for (auto i : accs) {
-        std::string nameacc = std::string("/acc/a") + std::to_string(aa++) + std::string(".txt"); 
+        std::string nameacc = std::string("acc/a") + std::to_string(aa++) + std::string(".txt"); 
         acc_file << std::fixed << i.first << " " << nameacc << std::endl;
-        std::ofstream acc_  (data_dir + nameacc, std::ios_base::out);
+        std::ofstream acc_  (data_dir + std::string("/") + nameacc, std::ios_base::out);
         acc_ << accs[i.first].x << " " <<  accs[i.first].y << " " << accs[i.first].z << std::endl;
         std::cout << "Saving accels: " << aa << "\r";
     }
     int gg = 0;
     for (auto i : gyrs) {
-        std::string namegyr = std::string("/gyr/g") + std::to_string(gg++) + std::string(".txt"); 
+        std::string namegyr = std::string("gyr/g") + std::to_string(gg++) + std::string(".txt"); 
         gyr_file << std::fixed << i.first << " " << namegyr << std::endl;
-        std::ofstream gyr_  (data_dir + namegyr, std::ios_base::out);
+        std::ofstream gyr_  (data_dir + std::string("/") + namegyr, std::ios_base::out);
         gyr_ << gyrs[i.first].x << " " <<  gyrs[i.first].y << " " << gyrs[i.first].z << std::endl;
         std::cout << "Saving gyroscopes: " << gg << "\r";
     }

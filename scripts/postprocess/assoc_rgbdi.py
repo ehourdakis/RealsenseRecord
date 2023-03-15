@@ -43,7 +43,7 @@ the depth.txt file, and joins them by finding the best matches.
 
 FELICE Edit: We have edited the script to include the accelerometer and gyroscope measurements
 Run as: 
-python assoc_rgbdi.py rgb.txt depth.txt acc.txt gyr.txt
+python assoc_rgbdi.py depth.txt rgb.txt acc.txt gyr.txt
 """
 
 import argparse
