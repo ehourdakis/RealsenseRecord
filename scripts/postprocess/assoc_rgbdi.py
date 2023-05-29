@@ -1,35 +1,4 @@
 #!/usr/bin/python
-# Software License Agreement (BSD License)
-#
-# Copyright (c) 2013, Juergen Sturm, TUM
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above
-#    copyright notice, this list of conditions and the following
-#    disclaimer in the documentation and/or other materials provided
-#    with the distribution.
-#  * Neither the name of TUM nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
 #
 # Requirements: 
 # sudo apt-get install python-argparse
@@ -50,7 +19,7 @@ import argparse
 import sys
 import os
 import numpy
-
+from tqdm import tqdm
 
 def read_file_list(filename):
     """
@@ -75,7 +44,7 @@ def read_file_list(filename):
     list = [(float(l[0]),str(*l[1:])) for l in list if len(l)>1]
     return dict(list)
 
-def associate(first_list, second_list,offset,max_difference):
+def associate(first_list, second_list,offset,op_name):
     """
     Associate two dictionaries of (stamp,data). As the time stamps never match exactly, we aim 
     to find the closest match for every input tuple.
@@ -84,29 +53,41 @@ def associate(first_list, second_list,offset,max_difference):
     first_list -- first dictionary of (stamp,data) tuples
     second_list -- second dictionary of (stamp,data) tuples
     offset -- time offset between both dictionaries (e.g., to model the delay between the sensors)
-    max_difference -- search radius for candidate generation
+    op_name -- name of the operation for couts
 
     Output:
     matches -- list of matched tuples ((stamp1,data1),(stamp2,data2))
     
     """
-    first_keys = list(first_list)#.keys()
-    second_keys = list(second_list)#.keys()
-    potential_matches = [(abs(a - (b + offset)), a, b) 
-                         for a in first_keys 
-                         for b in second_keys 
-                         if abs(a - (b + offset)) < 20]
+    first_keys = list(first_list)
+    second_keys = list(second_list)
+
+    potential_matches = []
+
+    with tqdm(total=len(first_keys), desc=op_name) as pbar_outer:
+        for a in first_keys:
+            for b in second_keys:
+                if abs(a - (b + offset)) < 20:
+                    potential_matches.append((abs(a - (b + offset)), a, b))
+            pbar_outer.update()
+
     potential_matches.sort()
     matches = []
-    for diff, a, b in potential_matches:
-        if a in first_keys and b in second_keys:
-            first_keys.remove(a)
-            second_keys.remove(b)
-            matches.append((a, b))
+    op_name2 = op_name + " 1-1"
+    with tqdm(total=len(potential_matches), desc=op_name2) as pbar_outer:
+        for diff, a, b in potential_matches:
+            if a in first_keys and b in second_keys:
+                first_keys.remove(a)
+                second_keys.remove(b)
+                matches.append((a, b))
+                
+            pbar_outer.update()
+
     matches.sort()
     return matches
 
-def associate_no_remove(first_list, second_list,offset,max_difference):
+
+def associate_no_remove(first_list, second_list,offset, op_name):
     """
     Associate two dictionaries of (stamp,data). As the time stamps never match exactly, we aim 
     to find the closest match for every input tuple.
@@ -115,27 +96,37 @@ def associate_no_remove(first_list, second_list,offset,max_difference):
     first_list -- first dictionary of (stamp,data) tuples
     second_list -- second dictionary of (stamp,data) tuples
     offset -- time offset between both dictionaries (e.g., to model the delay between the sensors)
-    max_difference -- search radius for candidate generation
+    op_name -- name of the operation for couts
 
     Output:
     matches -- list of matched tuples ((stamp1,data1),(stamp2,data2))
     
     """
-    first_keys  = list(first_list)#.keys()
-    second_keys = list(second_list)#.keys()
-    potential_matches = [(abs(a - (b + offset)), a, b) 
-                         for a in first_keys 
-                         for b in second_keys 
-                         if abs(a - (b + offset)) < 20]
+    first_keys = list(first_list)
+    second_keys = list(second_list)
+
+    potential_matches = []
+
+    with tqdm(total=len(first_keys), desc=op_name) as pbar_outer:
+        for a in first_keys:
+            for b in second_keys:
+                if abs(a - (b + offset)) < 20:
+                    potential_matches.append((abs(a - (b + offset)), a, b))
+            pbar_outer.update()
+
     potential_matches.sort()
     matches = []
-    #INFO: This a>b is to ensure that accleration-gyro measurements will  have timestamps less than the current frame
-    #i.e. ensure that acceleration-gyro measurements are inserted as they have come until the depth frame appeared
-    for diff, a, b in potential_matches:
-        if a in first_keys and b in second_keys and a>b:
-            #first_keys.remove(a)
-            second_keys.remove(b)
-            matches.append((a, b))
+
+    op_name2 = op_name + " 1-1"
+    #INFO: This a>b is to ensure that accleration-gyro measurements will have timestamps 
+    # less than the current frame i.e. ensure that acceleration-gyro measurements are 
+    # inserted as they have come until the depth frame appeared
+    with tqdm(total=len(potential_matches), desc=op_name2) as pbar_outer:
+        for diff, a, b in potential_matches:
+            if a in first_keys and b in second_keys and a>b:
+                second_keys.remove(b)
+                matches.append((a, b))
+            pbar_outer.update()
     matches.sort()
     return matches
 
@@ -161,11 +152,11 @@ if __name__ == '__main__':
     gyr_list   = read_file_list(args.gyr_file)
 
     print("Associating the RGB, Depth, Accelerometer and Gyroscope measurements, based on their timestamps")
-    #For preintegration we need only one acceleration - gyro pair so associate one-to-one accel gyro. We want the maximum pairs of accel-gyro for each depth
-    #frame so use associate_no_remove for this purpose. 
-    matches_depthrgb = associate		    (depth_list,    rgb_list,   float(args.offset),float(args.max_difference))    #Associate depth with rgb images
-    matches_depthacc = associate_no_remove  (depth_list,    acc_list,   float(args.offset),float(args.max_difference))    #Associate one depth with multiple Acceleration Frames
-    matches_accgyr   = associate		    (acc_list,      gyr_list,   float(args.offset),float(args.max_difference))    #Associate one acceleration frame with one gyro
+    #For preintegration we need only one acceleration - gyro pair so associate one-to-one accel gyro. We want 
+    #the maximum pairs of accel-gyro for each depth frame so use associate_no_remove for this purpose. 
+    matches_depthrgb = associate		    (depth_list,    rgb_list,   float(args.offset), "Depth with RGB")    #Associate depth with rgb images
+    matches_depthacc = associate_no_remove  (depth_list,    acc_list,   float(args.offset), "Depth with Accelerations")    #Associate one depth with one Acceleration Frames
+    matches_accgyr   = associate		    (acc_list,      gyr_list,   float(args.offset), "Acceleration with Gyro")    #Associate one acceleration frame with one gyro
 
     # print(matches_accgyr)
     depth_keys  = list(depth_list)#.keys()
@@ -173,11 +164,6 @@ if __name__ == '__main__':
     acc_keys    = list(acc_list)#.keys()
     gyr_keys    = list(gyr_list)#.keys()
 
-    #potential_matches = [(abs(a - (b + offset)), a, b) 
-    #                     for a in first_keys 
-    #                     for b in second_keys 
-    #                     if abs(a - (b + offset)) < 20]
-    #potential_matches.sort()
     matches_acc     = []
     depth_aligned   = open("depth_aligned.txt","w")
     rgb_aligned     = open("rgb_aligned.txt","w")
@@ -187,43 +173,34 @@ if __name__ == '__main__':
         os.mkdir("imu")
     index = 0
 
-    for d,r in matches_depthrgb: 
-        depth_aligned.write('%f %s\n' % (d, depth_list.get(d)))
-        rgb_aligned.write  ('%f %s\n' % (r, rgb_list.get(r)))
-        imu_aligned.write  ('%f imu/i%d.csv\n' % (d,index))
-        
-        txt = "imu/i{index:d}.csv"
-        #print(txt.format(index = index))
-        imu_frame_file   = open(txt.format(index = index),"w")
-        print("Matched ... Depth Timestamp: %f Depth file: %s RGB Timestamp: %f RGB file: %s"%(d,depth_list.get(d),r, str(rgb_list.get(r))))
-        for d2,a in matches_depthacc: 
-            if d == d2: 
-                for a2,g in matches_accgyr:
-                    if a2 == a:
-                        gyr_file = open(gyr_list.get(g),"r")
-                        str_gyr = gyr_file.readline().strip()
-                        acc_file = open(acc_list.get(a),"r")
-                        str_acc = acc_file.readline().strip()
-                        #print("%f %s %s"%(a2,str_acc,str_gyr))
+    total_matches = len(matches_depthrgb)
+    
+    with tqdm(total=total_matches, desc="Writting indices") as pbar:
+        for d,r in matches_depthrgb: 
+            depth_aligned.write('%f %s\n' % (d, depth_list.get(d)))
+            rgb_aligned.write  ('%f %s\n' % (r, rgb_list.get(r)))
+            imu_aligned.write  ('%f imu/i%d.csv\n' % (d,index))
+            
+            txt = "imu/i{index:d}.csv"
+            #print(txt.format(index = index))
+            imu_frame_file   = open(txt.format(index = index),"w")
+            #print("Matched ... Depth Timestamp: %f Depth file: %s RGB Timestamp: %f RGB file: %s"%(d,depth_list.get(d),r, str(rgb_list.get(r))))
+            for d2,a in matches_depthacc: 
+                if d == d2: 
+                    for a2,g in matches_accgyr:
+                        if a2 == a:
+                            gyr_file = open(gyr_list.get(g),"r")
+                            str_gyr = gyr_file.readline().strip()
+                            acc_file = open(acc_list.get(a),"r")
+                            str_acc = acc_file.readline().strip()
+                            #print("%f %s %s"%(a2,str_acc,str_gyr))
 
-                        imu_frame_file.write('%f %s %s\n'%(a2, str_acc, str_gyr))
-                        print("\t\tAcc Timestamp: %f Accelorometer file: %s Gyroscope Timestamp: %f Gyroscope file: %s"%(a2,acc_list.get(a2),g, gyr_list.get(g)))
+                            imu_frame_file.write('%f %s %s\n'%(a2, str_acc, str_gyr))
+                            #print("\t\tAcc Timestamp: %f Accelorometer file: %s Gyroscope Timestamp: %f Gyroscope file: %s"%(a2,acc_list.get(a2),g, gyr_list.get(g)))
 
-        index = index+1
+            index = index+1
+            pbar.update()  # Update progress after each complete iteration through the outer loop
 
     depth_aligned.close()
     rgb_aligned.close()
     imu_aligned.close()
-
-    #if args.first_only:
-    #for a,b in matches:
-    #    print("%f %s"%(a," ".join(first_list[a])))
-    #else:
-    #for a,b in matches_depthrgb:
-    #    print("%f %s %f %s"%(a," ".join(depth_list[a]),b-float(args.offset)," ".join(rgb_list[b])))
-    # for a,b in matches_depthacc:
-    #    print("%f %s %f %s"%(a," ".join(depth_list[a]),b-float(args.offset)," ".join(acc_list[b])))
-    # for a,b in matches_accgyr:
-    #    print("%f %s %f %s"%(a," ".join(acc_list[a]),b-float(args.offset)," ".join(gyr_list[b])))
-            
-        
