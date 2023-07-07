@@ -12,6 +12,8 @@
 #include <fstream>
 #include <boost/program_options.hpp> // command line argument options
 #include <boost/algorithm/string.hpp>
+#include <sys/ioctl.h> // For FIONREAD
+#include <termios.h>  // For struct termios, tcgetattr, ICANON
 
 namespace po = boost::program_options;
 
@@ -73,6 +75,29 @@ bool validate_frame_properties(int frame_width, int frame_height, int opt_framer
     return true;
 }
 
+/**
+ * @brief Non-blocking character reading.
+ * @ref https://stackoverflow.com/a/33201364
+ */
+int kbhit() {
+    static bool initflag = false;
+    static const int STDIN = 0;
+
+    if (!initflag) {
+        // Use termios to turn off line buffering
+        struct termios term;
+        tcgetattr(STDIN, &term);
+        term.c_lflag &= ~ICANON;
+        tcsetattr(STDIN, TCSANOW, &term);
+        setbuf(stdin, NULL);
+        initflag = true;
+    }
+
+    int nbbytes;
+    ioctl(STDIN, FIONREAD, &nbbytes);  // 0 is STDIN
+    return nbbytes;
+}
+
 int main(int argc, char * argv[]) 
 {
     // Default application parameters 
@@ -90,8 +115,8 @@ int main(int argc, char * argv[])
     desc.add_options()
         ("help,h", "Help message")
         ("dataset_dir", po::value<std::string>(&data_dir)->required(), "Directory to save the recorded dataset")
-        ("dataset_size", po::value<int>(&dataset_size)->required(), "Size of the recorded dataset")
-        ("rgb_fps", po::value<int>(&opt_framerate)->required(), "Depth frame rate")
+        ("dataset_size", po::value<int>(&dataset_size), "Size of the recorded dataset")
+        ("rgb_fps", po::value<int>(&opt_framerate)->default_value(60), "Depth frame rate")
         ("frame_width", po::value<int>(&frame_width)->default_value(640), "Frame width")
         ("frame_height", po::value<int>(&frame_height)->default_value(360), "Frame height")
         ("acc_framerate", po::value<int>(&acc_framerate)->default_value(250), "Accelerometer framerate")
@@ -157,7 +182,7 @@ int main(int argc, char * argv[])
     }
 
     std::cout << "RealSense Record - Asynchronious mode.\n";
-    std::cout << "Recording " << dataset_size << " frames in " << data_dir << std::endl;
+    std::cout << "Recording in " << data_dir << std::endl;
     std::cout << "Optical FPS: " << opt_framerate << "\nAccelerometer FPS: " << acc_framerate << "\nGyroscope FPS: " << gyro_framerate << "\nImage Width: " << frame_width << "\nImage Height: " << frame_height << std::endl;
 
     // Setup the database folders and index files
@@ -280,12 +305,21 @@ int main(int argc, char * argv[])
     auto start = std::chrono::system_clock::now();
 
     bool bfirst = false;
+    auto bUserExit = false;
+
+    // true if the user set the dataset_size in the cmd line arguments
+    auto user_dataset_size = vm.count("dataset_size");
+
+    // callback that checks user input for the escape button or dataset end
+    auto do_record = [&]() {
+        return !bUserExit && (user_dataset_size || (depths.size() <= dataset_size));
+    };
 
     // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
     auto callback = [&](const rs2::frame& frame)
     { 
         // Exit if we reached the requested data size
-        if(depths.size() > dataset_size) return;
+        if(do_record()==false) return;
 
         // Any modification to common memory should be done under lock
         std::lock_guard<std::mutex> lock(mutex);
@@ -298,13 +332,26 @@ int main(int argc, char * argv[])
             double ts = diff.count();
             std::cout << "Starting in " << std::setprecision(2) << wait_time - ts << " s" << "\r";
             // std::this_thread::sleep_for(std::chrono::seconds(5)); bfirst=false;
-            if(ts >= wait_time) {bfirst = true; std::cout << "Started Recording               " << "\n"; BEEP_ON;}
+            if(ts >= wait_time) 
+            {
+                bfirst = true; 
+                std::cout << "Recording ";
+                
+                if(user_dataset_size) 
+                    std::cout << std::to_string(dataset_size).c_str() << '\0';
+                else 
+                    std::cout << "until esc is pressed" << '\0';; 
+                
+                std::cout << "                     " << std::endl; // remove trailing characters from previous cout
+    
+                BEEP_ON;
+            }
+
             return;
         };
 
         // Cout the recorded data sizes
-        std::cout << "Recording " << (int)dataset_size << " (depth) frames " 
-            << "Depths: " << depths.size() << " RGBs: " << rgbs.size() 
+        std::cout << "Depths: " << depths.size() << " RGBs: " << rgbs.size() 
             << " Accs " << accs.size() << " Gyrs " << gyrs.size() << "\r";//std::endl; 
         
         // Retrieve RGB and depth frames as one frameset.
@@ -383,9 +430,20 @@ int main(int argc, char * argv[])
     fdistortion << std::setprecision(10) << intr.coeffs[0] << " " << intr.coeffs[1] << " " << intr.coeffs[2] << " " << intr.coeffs[3] << " " << intr.coeffs[4] << std::endl;
     
     // Run the program until we have the requested ammount of frames
-    while (depths.size() <= dataset_size)
+    while (do_record())
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        // Check for keyboard input
+        if(kbhit()) {
+            int ch = getchar();
+            // If Escape key is pressed
+            if (ch == 27) {
+                std::cout << "Escape key pressed, stopping recording...                     \n";
+                bUserExit = true;
+                // break;  // Exit the loop, stopping the recording
+            }
+        }
     }
 
     // Wait for one second to make sure all data have arrived and stop the device
