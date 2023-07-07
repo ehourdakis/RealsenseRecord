@@ -365,6 +365,10 @@ int main(int argc, char * argv[])
     auto focal_length       = std::make_pair(intr.fx, intr.fy);
     rs2_distortion model    = intr.model;
 
+    auto dep                = profiles.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+    auto intr_depth         = dep.get_intrinsics();
+    std::cout << std::fixed << std::setprecision(4) << "Depth distortion: [" << intr_depth.coeffs[0] << " " << intr_depth.coeffs[1] << " " << intr_depth.coeffs[2] << " " << intr_depth.coeffs[3] << " " << intr_depth.coeffs[4] << "]" << std::endl;
+
     // Cout and save the dataset intrinsics into a file
     std::cout << std::fixed << std::setprecision(4) << "Intrinsics: " << "px: " << intr.ppx << " py: " << intr.ppy << " fx: " << intr.fx << " fy: " << intr.fy << std::endl;
     
