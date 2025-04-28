@@ -4,9 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
-#include <termios.h>
 #include <mutex>
 #include <thread>
 #include <memory>
@@ -72,11 +71,12 @@ namespace realsense_record_ros_publisher
             const ros::NodeHandle& nh, 
             const ros::NodeHandle& nhp, 
             const std::string& rgb_info_topic_name = "/camera/color/camera_info",
-		    const std::string& rgb_image_topic_name = "/camera/color/image_raw",
-		    const std::string& depth_info_topic_name = "/camera/aligned_depth_to_color/camera_info",
-		    const std::string& depth_image_topic_name = "/camera/aligned_depth_to_color/image_raw");
+            const std::string& rgb_image_topic_name = "/camera/color/image_raw",
+            const std::string& depth_info_topic_name = "/camera/aligned_depth_to_color/camera_info",
+            const std::string& depth_image_topic_name = "/camera/aligned_depth_to_color/image_raw");
     
         ~RealsenseRecordROSPublisher();
+
     private:
         unsigned int _fps = 30;
         bool _paused = true;
@@ -100,7 +100,7 @@ namespace realsense_record_ros_publisher
         std::unique_ptr<IndexReader> _index_dep;
 
         // The image_transport based image publishers and the image_transport object
-	    std::unique_ptr<image_transport::ImageTransport> _pimage_transport;
+        std::unique_ptr<image_transport::ImageTransport> _pimage_transport;
 
         // The main loop thread
         std::unique_ptr<std::thread> _pmain_loop_thread;

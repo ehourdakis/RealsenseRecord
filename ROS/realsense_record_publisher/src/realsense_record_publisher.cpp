@@ -11,20 +11,20 @@ namespace realsense_record_ros_publisher
         const ros::NodeHandle& nh, 
         const ros::NodeHandle& nhp,
         const std::string& rgb_info_topic_name,
-		const std::string& rgb_image_topic_name, 
-		const std::string& depth_info_topic_name,
-		const std::string& depth_image_topic_name):
-        nh_(nh), 
-		nhp_(nhp),
-		_rgb_image_topic_name(rgb_image_topic_name),
-		_rgb_info_topic_name(rgb_info_topic_name),
-		_depth_image_topic_name(depth_image_topic_name),
-		_depth_info_topic_name(depth_info_topic_name),
-		_pmain_loop_thread(nullptr),
-		_simulation_time(ros::Time::now())                                          
-    {	
+        const std::string& rgb_image_topic_name,
+        const std::string& depth_info_topic_name,
+        const std::string& depth_image_topic_name):
+        _rgb_image_topic_name(rgb_image_topic_name),
+        _rgb_info_topic_name(rgb_info_topic_name),
+        _depth_image_topic_name(depth_image_topic_name),
+        _depth_info_topic_name(depth_info_topic_name),
+        _pmain_loop_thread(nullptr),
+        _simulation_time(ros::Time::now()),
+        nh_(nh),
+        nhp_(nhp)
+    {
 		std::string dataset_directory; 
-        if (!nhp_.getParam("dataset_directory", dataset_directory))
+		if (!nhp_.getParam("dataset_directory", dataset_directory))
 		{
 			ROS_ERROR("Dataset directory not set.\n");
 			ros::shutdown();
@@ -32,7 +32,7 @@ namespace realsense_record_ros_publisher
 		} else _dataset_directory = dataset_directory;
 
 		std::string rgb_index_file; 
-        if (!nhp_.getParam("rgb_index_file", rgb_index_file))
+		if (!nhp_.getParam("rgb_index_file", rgb_index_file))
 		{
 			ROS_ERROR("RGB file index not set.\n");
 			ros::shutdown();
@@ -50,7 +50,7 @@ namespace realsense_record_ros_publisher
 		std::string rgb_distortion_coefficients_filename; 
 		if (!nhp_.getParam("rgb_distortion_coefficients_filename", rgb_distortion_coefficients_filename))
 		{
-			ROS_ERROR("RGB distortion ceofficients not found.\n");
+			ROS_ERROR("RGB distortion coefficients not set.\n");
 			ros::shutdown();
 			return;
 		} else _rgb_distortion_coefficients_filename = rgb_distortion_coefficients_filename;
@@ -63,25 +63,25 @@ namespace realsense_record_ros_publisher
 			return;
 		} else _depth_index_file = depth_index_file;
 
-        if (!nhp_.getParam("rgb_info_topic_name", _rgb_info_topic_name))
+		if (!nhp_.getParam("rgb_info_topic_name", _rgb_info_topic_name))
 		{
-			ROS_ERROR("rgb info topic name not set.\n");
+			ROS_ERROR("RGB info topic name not set.\n");
 			ros::shutdown();
 			return;
 		}
-        if (!nhp_.getParam("rgb_image_topic_name", _rgb_image_topic_name))
+		if (!nhp_.getParam("rgb_image_topic_name", _rgb_image_topic_name))
 		{
-			ROS_ERROR("rgb image topic name not set.\n");
+			ROS_ERROR("RGB image topic name not set.\n");
 			ros::shutdown();
 			return;
 		}
-        if (!nhp_.getParam("depth_info_topic_name", _depth_info_topic_name))
+		if (!nhp_.getParam("depth_info_topic_name", _depth_info_topic_name))
 		{
 			ROS_ERROR("depth info topic name not set.\n");
 			ros::shutdown();
 			return;
 		}
-        if (!nhp_.getParam("depth_image_topic_name", _depth_image_topic_name))
+		if (!nhp_.getParam("depth_image_topic_name", _depth_image_topic_name))
 		{
 			ROS_ERROR("depth image topic name not set.\n");
 			ros::shutdown();
@@ -98,7 +98,7 @@ namespace realsense_record_ros_publisher
 		// Verify that files exist
 		if (!fs::exists(_dataset_directory / _rgb_index_file))
 		{
-			ROS_ERROR("RGB index file does not exist. Have you syncrhonized the data?\n");
+			ROS_ERROR("RGB index file does not exist! Have you synchronized the data?\n");
 			ros::shutdown();
 			return;
 		}
@@ -108,9 +108,15 @@ namespace realsense_record_ros_publisher
 			ros::shutdown();
 			return;
 		}
+		if (!fs::exists(_dataset_directory / _rgb_distortion_coefficients_filename))
+		{
+			ROS_ERROR("RGB distortion coefficients file does not exist!\n");
+			ros::shutdown();
+			return;
+		}
 		if (!fs::exists(_dataset_directory / _depth_index_file))
 		{
-			ROS_ERROR("Depth index file does not exist! . Have you syncrhonized the data?\n");
+			ROS_ERROR("Depth index file does not exist! Have you synchronized the data?\n");
 			ros::shutdown();
 			return;
 		}
@@ -120,18 +126,20 @@ namespace realsense_record_ros_publisher
 		// Retrieve RealsenseRecord stored calibration from file
 		if(!LoadCalibration())
 		{
-			ROS_ERROR("Cound not load calibration.\n");
+			ROS_ERROR("Could not load calibration.\n");
 			ros::shutdown();
 			return;
 		}
 
 		if(!InitializeIndexReaders())
 		{
-			ROS_ERROR("Count not initialize the index file readers.\n");
+			ROS_ERROR("Could not initialize the index file readers.\n");
 			ros::shutdown();
 			return;
 		}
-		
+
+		//// ROS-related initialization
+
 		// Initialize CameraInfo publishers
   		_prgb_info_pub_ = std::make_unique<ros::Publisher>( 
 			nh_.advertise<sensor_msgs::CameraInfo>(_rgb_info_topic_name, 5) );
@@ -153,16 +161,11 @@ namespace realsense_record_ros_publisher
 		 _pmain_loop_thread = std::make_unique<std::thread>(&RealsenseRecordROSPublisher::MainLoop, this);
     }
 
-
     RealsenseRecordROSPublisher::~RealsenseRecordROSPublisher() 
     {
-    	if (_pmain_loop_thread)
-		{
-			if (_pmain_loop_thread->joinable())
-       		{
+	if (_pmain_loop_thread && _pmain_loop_thread->joinable()) {
             	_pmain_loop_thread->join();
-        	}
-		}
+	}
     }
 
     sensor_msgs::ImagePtr RealsenseRecordROSPublisher::CreateDepthImageMsg(
@@ -200,17 +203,18 @@ namespace realsense_record_ros_publisher
 		_simulation_time = ros::Time(0);
 		
 		uint32_t seq_id = 0;
-		bool stopped = false;
 
-		bool bdata = true; // true if non of the IndexReaders is eof
+		bool bdata = true; // true if none of the IndexReaders is eof
 		bdata &= _index_rgb->load_data();
 		bdata &= _index_dep->load_data();
 
 		while (ros::ok() && bdata)
 		{
-			cv::Mat rgb_frame = cv::imread(_index_rgb->get_current_filename(),-1);
-			cv::Mat depth_frame = cv::imread(_index_dep->get_current_filename(),-1);
+			cv::Mat rgb_frame = cv::imread(_index_rgb->get_current_filename(), -1); // cv::IMREAD_UNCHANGED
+			cv::Mat depth_frame = cv::imread(_index_dep->get_current_filename(), -1);
 		
+			//_simulation_time = ros::Time::now();
+
 			// Create rgb camera info messages
 			sensor_msgs::CameraInfo rgb_info;
 			rgb_info.header.seq = seq_id;
@@ -261,7 +265,6 @@ namespace realsense_record_ros_publisher
 			_simulation_time += ros::Duration(1.0 / _fps);
 			seq_id++;
 
-			
 			fflush(stdin);
     		
 			if (kbhit()) {
@@ -289,7 +292,7 @@ namespace realsense_record_ros_publisher
 		Eigen::Matrix3d intrinsics_eig; 
 		bool loaded = load_matrix_from_file<Eigen::Matrix3d, double> (_dataset_directory / _rgb_calibration_filename, ',', intrinsics_eig);
 		if(!loaded) {
-			ROS_WARN_STREAM("Count not load " << _dataset_directory / _rgb_calibration_filename << " file");
+			ROS_WARN_STREAM("Could not load " << _dataset_directory / _rgb_calibration_filename << " file");
 			return false;
 		}
 
@@ -304,7 +307,7 @@ namespace realsense_record_ros_publisher
 		Eigen::Matrix<float, 1, 5> dist_coeffs_eig;
 		loaded = load_matrix_from_file<Eigen::Matrix<float, 1, 5>, float> (_dataset_directory / _rgb_distortion_coefficients_filename, ' ', dist_coeffs_eig);
 		if(!loaded) {
-			ROS_WARN_STREAM("Count not load " << _dataset_directory / _rgb_distortion_coefficients_filename);
+			ROS_WARN_STREAM("Could not load " << _dataset_directory / _rgb_distortion_coefficients_filename);
 			return false;
 		}
 		

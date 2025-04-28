@@ -4,6 +4,10 @@ project(realsense_record_publisher)
 ## Compile as C++14
 add_compile_options(-std=c++14)
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall)
+endif()
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -13,9 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   cv_bridge
-  image_geometry
-  stereo_msgs
-  geometry_msgs
   image_transport
 )
 
@@ -50,9 +51,6 @@ catkin_package(
   std_msgs
   sensor_msgs
   cv_bridge
-  image_geometry
-  stereo_msgs
-  geometry_msgs
   image_transport 
 )
 
