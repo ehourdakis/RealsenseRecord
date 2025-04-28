@@ -158,4 +158,7 @@ HW synchronization of multiple cameras is described in this [white paper](https:
 The folder **Docker** includes a Dockerfile and a pre-compiled library, for running the recorder seamlessly. Please refer to the [Docker/README.md](Docker/README.md) for more information on installing and executing this contained application.
 
 ## ROS
-The folder **ROS** includes packages for running the application in a ROS environment. Please refer to the [ROS/README.md](ROS/README.md) for more information.
+The folder **ROS** includes packages for running the application in a ROS1 environment. Please refer to the [ROS/README.md](ROS/README.md) for more information.
+
+## ROS2
+The folder **ROS2** provides a similar functionality in a ROS2 environment. For more information, please refer to the [ROS2/README.md](ROS2/README.md).
