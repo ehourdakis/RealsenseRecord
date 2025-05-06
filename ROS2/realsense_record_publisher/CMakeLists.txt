@@ -44,7 +44,11 @@ ament_target_dependencies(realsense_record_publisher
 )
 
 install(TARGETS realsense_record_publisher
-        RUNTIME DESTINATION lib/${PROJECT_NAME})
+  RUNTIME DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -16,8 +16,12 @@
 
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <image_transport/image_transport.hpp>
-#include <cv_bridge/cv_bridge.hpp>
 #include <sensor_msgs/image_encodings.hpp>
+#if ROS_VERSION_MAJOR <= 2
+#include <cv_bridge/cv_bridge.h> // humble or earlier
+#else
+#include <cv_bridge/cv_bridge.hpp>
+#endif //ROS_VERSION_MAJOR
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
