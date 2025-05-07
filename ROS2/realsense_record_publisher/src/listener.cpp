@@ -18,20 +18,20 @@ public:
 
     // Subscribe to RGB image and camera info
     rgb_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/vlm/camera/color/image_raw", qos,
+      "/camera/color/image_raw", qos,
       std::bind(&ImageListener::rgbImageCallback, this, std::placeholders::_1));
 
     rgb_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-      "/vlm/camera/color/camera_info", qos,
+      "/camera/color/camera_info", qos,
       std::bind(&ImageListener::rgbInfoCallback, this, std::placeholders::_1));
 
     // Subscribe to depth image and camera info
     depth_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/vlm/camera/depth/image_rect_raw", qos,
+      "/camera/depth/image_rect_raw", qos,
       std::bind(&ImageListener::depthImageCallback, this, std::placeholders::_1));
 
     depth_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-      "/vlm/camera/depth/camera_info", qos,
+      "/camera/depth/camera_info", qos,
       std::bind(&ImageListener::depthInfoCallback, this, std::placeholders::_1));
   }
 
