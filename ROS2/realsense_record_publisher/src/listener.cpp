@@ -9,29 +9,41 @@
 class ImageListener : public rclcpp::Node
 {
 public:
-  ImageListener() : Node("image_listener")
+  explicit ImageListener(const rclcpp::NodeOptions& options) : Node("image_listener", options)
   {
     // set QoS
     rclcpp::QoS qos(1);  // depth 1 is typical for images
     //qos.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
     qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
 
+    // Declare parameters
+    this->declare_parameter<std::string>("rgb_image_topic_name", "/camera/color/image_raw");
+    this->declare_parameter<std::string>("rgb_info_topic_name", "/camera/color/camera_info");
+    this->declare_parameter<std::string>("depth_image_topic_name", "/camera/aligned_depth_to_color/image_raw");
+    this->declare_parameter<std::string>("depth_info_topic_name", "/camera/aligned_depth_to_color/camera_info");
+
+    // Get values
+    _rgb_image_topic_name = this->get_parameter("rgb_image_topic_name").as_string();
+    _rgb_info_topic_name = this->get_parameter("rgb_info_topic_name").as_string();
+    _depth_image_topic_name = this->get_parameter("depth_image_topic_name").as_string();
+    _depth_info_topic_name = this->get_parameter("depth_info_topic_name").as_string();
+
     // Subscribe to RGB image and camera info
-    rgb_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/camera/color/image_raw", qos,
+    _rgb_image_sub = this->create_subscription<sensor_msgs::msg::Image>(
+      _rgb_image_topic_name, qos,
       std::bind(&ImageListener::rgbImageCallback, this, std::placeholders::_1));
 
-    rgb_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-      "/camera/color/camera_info", qos,
+    _rgb_info_sub = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+      _rgb_info_topic_name, qos,
       std::bind(&ImageListener::rgbInfoCallback, this, std::placeholders::_1));
 
     // Subscribe to depth image and camera info
-    depth_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/camera/depth/image_rect_raw", qos,
+    _depth_image_sub = this->create_subscription<sensor_msgs::msg::Image>(
+      _depth_image_topic_name, qos,
       std::bind(&ImageListener::depthImageCallback, this, std::placeholders::_1));
 
-    depth_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-      "/camera/depth/camera_info", qos,
+    _depth_info_sub = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+      _depth_info_topic_name, qos,
       std::bind(&ImageListener::depthInfoCallback, this, std::placeholders::_1));
   }
 
@@ -40,7 +52,7 @@ private:
   {
     try
     {
-      auto cv_image = cv_bridge::toCvShare(msg, "bgr8");
+      auto cv_image = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
       cv::imshow("RGB Image", cv_image->image);
       cv::waitKey(1);
     
@@ -108,16 +120,23 @@ private:
               msg->roi.do_rectify ? "true" : "false");
   }
 
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr rgb_image_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr rgb_info_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_image_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr depth_info_sub_;
+  std::string _rgb_image_topic_name;
+  std::string _rgb_info_topic_name;
+  std::string _depth_image_topic_name;
+  std::string _depth_info_topic_name;
+
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _rgb_image_sub;
+  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr _rgb_info_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub;
+  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr _depth_info_sub;
 };
 
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<ImageListener>();
+  rclcpp::NodeOptions options;
+
+  auto node = std::make_shared<ImageListener>(options);
   rclcpp::spin(node);
   rclcpp::shutdown();
 
