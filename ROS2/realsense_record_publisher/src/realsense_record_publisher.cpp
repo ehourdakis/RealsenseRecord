@@ -166,8 +166,13 @@ namespace realsense_record_ros_publisher
   		_prgb_info_pub_ = _node->create_publisher<sensor_msgs::msg::CameraInfo>(_rgb_info_topic_name, 5);
 		_pdepth_info_pub_ = _node->create_publisher<sensor_msgs::msg::CameraInfo>(_depth_info_topic_name, 5);
 
-		// Image publishers
-		auto qos = rclcpp::SensorDataQoS().keep_last(1);
+		// Initialize Image publishers
+		// Set QoS
+		//rclcpp::QoS qos(10); // queue size (depth)
+		rclcpp::QoS qos = rclcpp::SensorDataQoS().keep_last(1);
+		qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+		qos.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+
 		_prgb_image_pub_ = std::make_unique<image_transport::Publisher>(image_transport::create_publisher(_node.get(), _rgb_image_topic_name, qos.get_rmw_qos_profile()));
 		_pdepth_image_pub_ = std::make_unique<image_transport::Publisher>(image_transport::create_publisher(_node.get(), _depth_image_topic_name, qos.get_rmw_qos_profile()));
 
