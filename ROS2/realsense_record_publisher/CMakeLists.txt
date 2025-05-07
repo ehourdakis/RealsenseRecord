@@ -43,11 +43,25 @@ ament_target_dependencies(realsense_record_publisher
   image_transport
 )
 
+add_executable(listener src/listener.cpp)
+ament_target_dependencies(listener
+  rclcpp
+  std_msgs
+  sensor_msgs
+  cv_bridge
+  image_transport
+  OpenCV
+)
+
 install(TARGETS realsense_record_publisher
   RUNTIME DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/
+)
+
+install(TARGETS listener
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
