@@ -157,6 +157,9 @@ namespace realsense_record_ros_publisher
 			rclcpp::shutdown();
 			return;
 		}
+
+		RCLCPP_INFO_STREAM(logger, "Publishing to RGB img + info topics " << _rgb_image_topic_name << " + " << _rgb_info_topic_name);
+		RCLCPP_INFO_STREAM(logger, "Publishing to depth img + info topics " << _depth_image_topic_name << " + " << _depth_info_topic_name);
     }
 
     // ROS-related initialization
