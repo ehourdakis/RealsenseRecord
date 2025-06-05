@@ -14,8 +14,8 @@ def generate_launch_description():
         DeclareLaunchArgument('depth_index_file', default_value='depth_aligned.txt', description='Depth index file'),
         DeclareLaunchArgument('rgb_info_topic_name', default_value='/camera/color/camera_info', description='RGB info topic'),
         DeclareLaunchArgument('rgb_image_topic_name', default_value='/camera/color/image_raw', description='RGB image topic'),
-        DeclareLaunchArgument('depth_info_topic_name', default_value='/camera/depth/camera_info', description='Depth info topic'),
-        DeclareLaunchArgument('depth_image_topic_name', default_value='/camera/depth/image_rect_raw', description='Depth image topic'),
+        DeclareLaunchArgument('depth_info_topic_name', default_value='/camera/aligned_depth_to_color/camera_info', description='Depth info topic'),
+        DeclareLaunchArgument('depth_image_topic_name', default_value='/camera/aligned_depth_to_color/image_raw', description='Depth image topic'),
 
         # Node
         Node(

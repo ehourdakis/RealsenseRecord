@@ -29,8 +29,8 @@ namespace realsense_record_ros_publisher
 		node->declare_parameter<std::string>("depth_index_file", "");
 		node->declare_parameter<std::string>("rgb_info_topic_name", "rgb/camera_info");
 		node->declare_parameter<std::string>("rgb_image_topic_name", "rgb/image_raw");
-		node->declare_parameter<std::string>("depth_info_topic_name", "depth/camera_info");
-		node->declare_parameter<std::string>("depth_image_topic_name", "depth/image_raw");
+		node->declare_parameter<std::string>("depth_info_topic_name", "aligned_depth_to_color/camera_info");
+		node->declare_parameter<std::string>("depth_image_topic_name", "aligned_depth_to_color/image_raw");
 		node->declare_parameter<double>("fps", 30.0);
 
 		// Get parameter values
