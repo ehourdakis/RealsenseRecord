@@ -3,6 +3,8 @@ This is a player for a set of synchronized RGB and depth images.
 
 Run as:
 python playback.py  --rgb_list rgb_aligned.txt --depth_list depth_aligned.txt --base_path /home/data/path/
+or even
+python playback.py  --base_path /home/data/path/
  
 See also: assoc_rgbdi.py
 """
@@ -61,10 +63,10 @@ def depth_to_8bit(depth):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rgb_list", required=True)
-    parser.add_argument("--depth_list", required=True)
+    parser.add_argument("--rgb_list", default="rgb_aligned.txt")
+    parser.add_argument("--depth_list", default="depth_aligned.txt")
     parser.add_argument("--scale", type=float, default=1.0)
-    parser.add_argument("--base_path", type=str, default="")  # optional prefix
+    parser.add_argument("--base_path", type=str, default="", required=False)  # optional prefix
     parser.add_argument("--start_frame", type=int, default=0)  # arbitrary first frame
     args = parser.parse_args()
 
@@ -113,6 +115,8 @@ def main():
         # black outline
         cv2.putText(combined, status, (x, y), font, 1, (0,0,0), thickness+2)
         cv2.putText(combined, status, (x, y), font, 1, (0,255,0), thickness)
+        # depth filename
+        #cv2.putText(combined, depth_file, (x+rgb.shape[1], y), font, 1, (0,0,255), thickness)
 
         cv2.imshow("RGB | Depth", combined)
 
