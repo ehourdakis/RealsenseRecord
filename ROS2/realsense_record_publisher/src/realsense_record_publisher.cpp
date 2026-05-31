@@ -298,6 +298,7 @@ namespace realsense_record_ros_publisher
 		bdata &= _index_dep->load_data();
 
 		auto logger = _node->get_logger();
+		RCLCPP_INFO(logger, "Start ts (RGB,D): %.6f %.6f", _index_rgb->get_current_timestamp(), _index_dep->get_current_timestamp());
 
 		while (rclcpp::ok() && bdata)
 		{

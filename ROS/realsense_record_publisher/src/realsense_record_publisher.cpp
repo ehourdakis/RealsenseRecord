@@ -278,6 +278,8 @@ namespace realsense_record_ros_publisher
 		bdata &= _index_rgb->load_data();
 		bdata &= _index_dep->load_data();
 
+		ROS_INFO("Start ts (RGB,D): %.6f %.6f", _index_rgb->get_current_timestamp(), _index_dep->get_current_timestamp());
+
 		while (ros::ok() && bdata)
 		{
 			cv::Mat rgb_frame = cv::imread(_index_rgb->get_current_filename(), cv::IMREAD_UNCHANGED);
