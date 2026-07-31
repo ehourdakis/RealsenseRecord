@@ -14,7 +14,7 @@ git clone https://github.com/ehourdakis/RealsenseRecord.git
 ***
 **If you are looking for a quick way to record data, then you can skip to the [Calibration of the RGB and Depth sensors](#CalibratingRGBD) section, for instructions on how to calibrate the camera, and then to the [Docker](#Docker) section, for instructions on how to run a pre-compiled version of the application, to record data seamlessly.**
 ***
-Use the script **setup.sh** in the **scipts/installation** directory, to install the project's dependencies. After setting all up, configure and compile the project, by specifying your OpenCV4 and RealsenseSDK installation folders: 
+Use the script **setup.sh** in the **scripts/installation** directory, to install the project's dependencies. After setting all up, configure and compile the project, by specifying your OpenCV4 and RealsenseSDK installation folders:
 ```bash
 # Create build directories
 cd RealsenseRecord/
@@ -45,6 +45,11 @@ To record from a specific device (when multiple ones are plugged in), specify it
 ```bash
 # Record 300 frames with 60 FPS in the home/datadir/ directory from device with serial 038254756270
 ./rs_async_drop_RGBDIMU "/home/datadir/" 300 60 --dev_serial 038254756270
+```
+The power of the infrared laser emitter can be specified with ``--laser_power``:
+```bash
+# Set laser emitter power
+./rs_async_drop_RGBDIMU "/home/datadir/" 300 60 --laser_power 180
 ```
 Pressing 'Esc' will prematurely stop the recording with the frames that have been captured up to that point.
 The program will acquire the data from the different camera streams and store them in the directory specified in the first argument. The directory structure of the dataset has the following form:

@@ -111,6 +111,7 @@ int main(int argc, char * argv[])
     int gyro_framerate = 400;
     int rgb_exposure = 200;
     int depth_exposure = 10;
+    int laser_power = 160;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -124,7 +125,8 @@ int main(int argc, char * argv[])
         ("acc_framerate", po::value<int>(&acc_framerate)->default_value(200), "Accelerometer framerate")
         ("gyro_framerate", po::value<int>(&gyro_framerate)->default_value(400), "Gyroscope framerate")
         ("rgb_exposure", po::value<int>(&rgb_exposure)->default_value(200), "RGB exposure")
-        ("depth_exposure", po::value<int>(&depth_exposure)->default_value(10), "Depth exposure");
+        ("depth_exposure", po::value<int>(&depth_exposure)->default_value(10), "Depth exposure")
+        ("laser_power", po::value<int>(&laser_power)->default_value(160), "Laser power");
 
     po::positional_options_description p;
     p.add("dataset_dir", 1)
@@ -135,7 +137,8 @@ int main(int argc, char * argv[])
      .add("acc_framerate", 1)
      .add("gyro_framerate", 1)
      .add("rgb_exposure", 1)
-     .add("depth_exposure", 1);
+     .add("depth_exposure", 1)
+     .add("laser_power", 1);
 
     po::variables_map vm;
     try {
@@ -298,13 +301,32 @@ int main(int argc, char * argv[])
         return EXIT_FAILURE;
     }
 
-    // Change the RGB and depth autoexposure parameter
+    // Change the RGB / depth auto exposure and the laser power parameters
     try
     {
+        auto dpth_rng = sensors[dpth_idx].get_option_range(rs2_option::RS2_OPTION_EXPOSURE);
+        float clipped_depth_exposure = std::min(std::max(static_cast<float>(depth_exposure), dpth_rng.min), dpth_rng.max);
+        if (std::fabs(depth_exposure - clipped_depth_exposure) > 0.1f) {
+		std::cerr << "Depth exposure clipped to " << clipped_depth_exposure << std::endl;
+        }
+
+        auto rgb_rng = sensors[rgb_idx].get_option_range(rs2_option::RS2_OPTION_EXPOSURE);
+        float clipped_rgb_exposure = std::min(std::max(static_cast<float>(rgb_exposure), rgb_rng.min), rgb_rng.max);
+        if (std::fabs(rgb_exposure - clipped_rgb_exposure) > 0.1f) {
+		std::cerr << "RGB exposure clipped to " << clipped_rgb_exposure << std::endl;
+        }
+
+        auto pwr_rng = sensors[dpth_idx].get_option_range(rs2_option::RS2_OPTION_LASER_POWER);
+        float clipped_laser_power = std::min(std::max(static_cast<float>(laser_power), pwr_rng.min), pwr_rng.max);
+        if (std::fabs(laser_power - clipped_laser_power) > 0.1f) {
+		std::cerr << "Laser power clipped to " << clipped_laser_power << std::endl;
+        }
+
         sensors[dpth_idx].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
         sensors[rgb_idx].set_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-        sensors[dpth_idx].set_option(rs2_option::RS2_OPTION_EXPOSURE, depth_exposure);
-        sensors[rgb_idx].set_option(rs2_option::RS2_OPTION_EXPOSURE, rgb_exposure);
+        sensors[dpth_idx].set_option(rs2_option::RS2_OPTION_EXPOSURE, clipped_depth_exposure);
+        sensors[rgb_idx].set_option(rs2_option::RS2_OPTION_EXPOSURE, clipped_rgb_exposure);
+        sensors[dpth_idx].set_option(rs2_option::RS2_OPTION_LASER_POWER, clipped_laser_power);
     }
     catch (const rs2::error & e)
     {
@@ -312,8 +334,9 @@ int main(int argc, char * argv[])
         return EXIT_FAILURE;
     }
 
-    // Print the autoexposure settings for the RGB and Depth sensor
+    // Print the configured settings for the RGB and Depth sensor
     std::cout << "Sensor " << get_sensor_name(sensors[dpth_idx]) << " exposure: " << sensors[dpth_idx].get_option(rs2_option::RS2_OPTION_EXPOSURE) << std::endl;
+    std::cout << "Sensor " << get_sensor_name(sensors[dpth_idx]) << " power: " << sensors[dpth_idx].get_option(rs2_option::RS2_OPTION_LASER_POWER) << std::endl;
     std::cout << "Sensor " << get_sensor_name(sensors[rgb_idx]) << " exposure: " << sensors[rgb_idx].get_option(rs2_option::RS2_OPTION_EXPOSURE) << std::endl;
 	
     // Check if camera supports loading a .json configuration
